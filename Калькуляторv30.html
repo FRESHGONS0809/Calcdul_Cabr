@@ -575,6 +575,42 @@ function setAmmoType(type) {
         c8BurstPanelWrapper.classList.remove('active');
     }
     
+    // ✅ Обновляем интерфейс в зависимости от режима подрыва и типа ракет
+    if (isRpgLike) {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+            rangeSlider.max = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            minRangeLabel.textContent = `МИН: ${((C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            maxRangeLabel.textContent = `МАКС: ${((C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            let cur = parseInt(rangeSlider.value);
+            if (cur < rangeSlider.min) rangeSlider.value = rangeSlider.min;
+            if (cur > rangeSlider.max) rangeSlider.value = rangeSlider.max;
+        }
+    } else {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = 3500;
+            rangeSlider.max = 11500;
+            minRangeLabel.textContent = 'МИН: 3.5 км';
+            maxRangeLabel.textContent = 'МАКС: 11.5 км';
+        }
+    }
+    
     let curVal = parseInt(rangeSlider.value);
     if(curVal < parseInt(rangeSlider.min)) rangeSlider.value = rangeSlider.min;
     if(curVal > parseInt(rangeSlider.max)) rangeSlider.value = rangeSlider.max;
@@ -612,7 +648,7 @@ function toggleBurstMode() {
         if (isAirburst) {
             rangeWrapper.classList.add('collapsed');
             staticRangeDisplay.classList.add('visible');
-            staticRangeText.textContent = '5810 м';
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
             staticRangeText.style.color = 'var(--air-color)';
             staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
         } else {
@@ -630,7 +666,7 @@ function toggleBurstMode() {
         if (isAirburst) {
             rangeWrapper.classList.add('collapsed');
             staticRangeDisplay.classList.add('visible');
-            staticRangeText.textContent = '12250 м';
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
             staticRangeText.style.color = 'var(--air-color)';
             staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
         } else {

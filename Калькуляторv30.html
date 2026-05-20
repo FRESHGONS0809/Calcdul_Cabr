@@ -45,6 +45,7 @@
         .height-label { font-size: 1rem; color: #777; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
         .height-number-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 12px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 4rem; font-weight: bold; text-align: center; width: 220px; padding: 10px 0; outline: none; transition: border-color 0.3s, box-shadow 0.3s; }
         .height-number-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
+        .height-input-wrapper.panel-active .height-number-input { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
         .burst-toggle-btn { width: 100%; padding: 18px; margin-bottom: 25px; background: rgba(74, 222, 128, 0.1); border: 2px solid var(--contact-color); color: var(--contact-color); font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px; }
         .burst-toggle-btn:hover { background: rgba(74, 222, 128, 0.2); box-shadow: 0 0 15px var(--contact-color); }
         .burst-toggle-btn.airburst { background: rgba(255, 165, 2, 0.15); border-color: var(--air-color); color: var(--air-color); }
@@ -168,6 +169,19 @@
         
         .service-menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
         .service-menu-overlay.active { display: flex; }
+        
+        /* ✅ МОДАЛЬНОЕ ОКНО ВВОДА ПАРОЛЯ */
+        .password-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .password-modal { background: var(--card-bg); border: 2px solid var(--text-highlight); border-radius: 12px; padding: 40px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 40px rgba(102, 252, 241, 0.3); }
+        .password-title { font-family: var(--font-mono); font-size: 1.4rem; color: var(--text-highlight); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+        .password-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 8px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 2rem; font-weight: bold; text-align: center; width: 100%; padding: 15px; margin-bottom: 20px; outline: none; transition: all 0.3s; letter-spacing: 5px; }
+        .password-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 20px rgba(102, 252, 241, 0.4); }
+        .password-input.error { border-color: var(--danger); animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .password-submit { width: 100%; padding: 16px; background: var(--text-highlight); border: none; color: #000; font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 2px; }
+        .password-submit:hover { box-shadow: 0 0 25px var(--text-highlight); transform: translateY(-2px); }
+        .password-error-msg { color: var(--danger); font-family: var(--font-mono); font-size: 0.9rem; margin-top: 15px; min-height: 20px; font-weight: 600; }
+        
         .service-menu { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
         .service-menu-header { background: #15171c; padding: 18px 25px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
         .service-menu-title { font-family: var(--font-mono); font-weight: 700; color: var(--text-highlight); font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; }
@@ -208,7 +222,17 @@
     </style>
 </head>
 <body>
-<div class="container">
+<!-- ✅ МОДАЛЬНОЕ ОКНО ВВОДА ПАРОЛЯ -->
+<div class="password-overlay" id="passwordOverlay">
+    <div class="password-modal">
+        <div class="password-title">🔐 ВВЕДИТЕ ПАРОЛЬ ДОСТУПА</div>
+        <input type="password" id="passwordInput" class="password-input" maxlength="4" placeholder="••••" inputmode="numeric">
+        <button class="password-submit" onclick="checkPassword()">ВОЙТИ</button>
+        <div class="password-error-msg" id="passwordErrorMsg"></div>
+    </div>
+</div>
+
+<div class="container" id="mainContainer" style="filter: blur(8px); pointer-events: none;">
     <div class="ammo-selector-wrapper">
         <button class="ammo-trigger-btn" onclick="toggleAmmoMenu()">
             <span id="currentAmmoLabel">🎯 HYDRA 70</span>
@@ -226,7 +250,7 @@
         <button class="settings-btn" onclick="toggleServiceMenu()" title="Сервисное меню">⚙️</button>
     </div>
     <div class="content">
-        <div class="height-input-wrapper">
+        <div class="height-input-wrapper" id="targetHeightWrapper">
             <div class="height-label">ВЫСОТА ЦЕЛИ (м)</div>
             <input type="number" id="targetHeightInput" class="height-number-input" value="125" min="0" max="2000" step="1">
         </div>
@@ -257,7 +281,7 @@
             <div class="static-range-text" id="staticRangeText">5810 м</div>
             <span class="static-range-sub" id="staticRangeSub">ФИКСИРОВАННАЯ ДАЛЬНОСТЬ</span>
         </div>
-        <button class="btn-calc" id="calcBtn" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
+        <button class="btn-calc" id="calcBtn" style="display:none;" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
         <div class="results" id="resultArea"></div>
 
         <div class="panels-row">
@@ -454,6 +478,7 @@ let currentResults = {};
 let activeServiceAngle = 'hydra_contact';
 
 const targetHeightInput = document.getElementById('targetHeightInput');
+const targetHeightWrapper = document.getElementById('targetHeightWrapper');
 const rangeSlider = document.getElementById('rangeSlider');
 const rangeDisplay = document.getElementById('rangeValueDisplay');
 const resultArea = document.getElementById('resultArea');
@@ -481,6 +506,27 @@ targetHeightInput.addEventListener('input', function() {
     if (isNaN(val) || val < 0) val = 0;
     currentTargetAlt = val;
     calculateOptimal();
+    replayBurstAnim();
+});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты цели
+targetHeightWrapper.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    let newVal = parseInt(targetHeightInput.value) + delta;
+    newVal = Math.max(0, Math.min(9000, newVal));
+    targetHeightInput.value = newVal;
+    currentTargetAlt = newVal;
+    calculateOptimal();
+    replayBurstAnim();
+}, { passive: false });
+
+// Подсветка панели при наведении
+targetHeightWrapper.addEventListener('mouseenter', () => {
+    targetHeightWrapper.classList.add('panel-active');
+});
+targetHeightWrapper.addEventListener('mouseleave', () => {
+    targetHeightWrapper.classList.remove('panel-active');
 });
 
 // ✅ УПРАВЛЕНИЕ МЕНЮ
@@ -526,6 +572,14 @@ function handlePanelInput(clientY) {
 
 c8BurstPanel.addEventListener('mousedown', (e) => { isDraggingPanel = true; handlePanelInput(e.clientY); });
 c8BurstPanel.addEventListener('touchstart', (e) => { isDraggingPanel = true; handlePanelInput(e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты подрыва
+c8BurstPanelWrapper.addEventListener('wheel', (e) => {
+    if (!isAirburst || !['c8','s5','s13'].includes(currentAmmo)) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    setC8AirburstHeight(c8AirburstHeight + delta);
+}, { passive: false });
 
 window.addEventListener('mousemove', (e) => { if(isDraggingPanel) handlePanelInput(e.clientY); });
 window.addEventListener('touchmove', (e) => { if(isDraggingPanel) handlePanelInput(e.touches[0].clientY); });
@@ -575,6 +629,42 @@ function setAmmoType(type) {
         c8BurstPanelWrapper.classList.remove('active');
     }
     
+    // ✅ Обновляем интерфейс в зависимости от режима подрыва и типа ракет
+    if (isRpgLike) {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+            rangeSlider.max = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            minRangeLabel.textContent = `МИН: ${((C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            maxRangeLabel.textContent = `МАКС: ${((C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            let cur = parseInt(rangeSlider.value);
+            if (cur < rangeSlider.min) rangeSlider.value = rangeSlider.min;
+            if (cur > rangeSlider.max) rangeSlider.value = rangeSlider.max;
+        }
+    } else {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = 3500;
+            rangeSlider.max = 11500;
+            minRangeLabel.textContent = 'МИН: 3.5 км';
+            maxRangeLabel.textContent = 'МАКС: 11.5 км';
+        }
+    }
+    
     let curVal = parseInt(rangeSlider.value);
     if(curVal < parseInt(rangeSlider.min)) rangeSlider.value = rangeSlider.min;
     if(curVal > parseInt(rangeSlider.max)) rangeSlider.value = rangeSlider.max;
@@ -612,7 +702,7 @@ function toggleBurstMode() {
         if (isAirburst) {
             rangeWrapper.classList.add('collapsed');
             staticRangeDisplay.classList.add('visible');
-            staticRangeText.textContent = '5810 м';
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
             staticRangeText.style.color = 'var(--air-color)';
             staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
         } else {
@@ -630,7 +720,7 @@ function toggleBurstMode() {
         if (isAirburst) {
             rangeWrapper.classList.add('collapsed');
             staticRangeDisplay.classList.add('visible');
-            staticRangeText.textContent = '12250 м';
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
             staticRangeText.style.color = 'var(--air-color)';
             staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
         } else {
@@ -655,8 +745,30 @@ rangeSlider.addEventListener('input', function() {
     } else {
         rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
     }
+    calculateOptimal();
     updateFlightTimePanel();
+    replayBurstAnim();
 });
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для ползунка дальности
+rangeWrapper.addEventListener('wheel', (e) => {
+    if (!rangeWrapper.classList.contains('collapsed')) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -100 : 100;
+        let newVal = parseInt(rangeSlider.value) + delta;
+        newVal = Math.max(parseInt(rangeSlider.min), Math.min(parseInt(rangeSlider.max), newVal));
+        rangeSlider.value = newVal;
+        rangeDisplay.textContent = newVal + ' м';
+        if (currentAmmo === 'hydra' && !isAirburst && newVal > 10800) {
+            rangeDisplay.classList.add('range-warning'); updateScatterExtra(true);
+        } else {
+            rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
+        }
+        calculateOptimal();
+        updateFlightTimePanel();
+        replayBurstAnim();
+    }
+}, { passive: false });
 function updateScatterExtra(isLongRange) {
     document.getElementById('scatterExtra').style.display = (isLongRange && currentAmmo==='hydra' && !isAirburst) ? 'block' : 'none';
 }
@@ -1455,10 +1567,8 @@ function calculateOptimal(){
         let realBurstH = '—';
         if(['c8','s5','s13'].includes(currentAmmo)){
             const realBurst = Math.max(0, c8AirburstHeight - 10);
-            realBurstH = realBurst + 'м';
+            scatterNote=`<div style="margin-top:8px;padding:6px;background:rgba(74,222,128,0.15);border-left:3px solid #4ade80;border-radius:4px;font-size:0.8rem;color:#4ade80;">☁️ Погрешность реальной высоты подрыва ±5 м • Высота −10м</div>`;
         }
-        const modeText = ['c8','s5','s13'].includes(currentAmmo) ? `Реальный подрыв ~${realBurstH} над целью` : 'Подрыв на 10-50м над целью';
-        scatterNote=`<div style="margin-top:8px;padding:6px;background:rgba(74,222,128,0.15);border-left:3px solid #4ade80;border-radius:4px;font-size:0.8rem;color:#4ade80;">☁️ ${modeText} • Высота −10м</div>`;
     }
     resultArea.innerHTML=`<div class="${cardClass}"><div class="card-info"><h3>${currentAmmo.toUpperCase()} • 0°</h3><p>ЦЕЛЬ: <b style="color:#fff">${currentTargetAlt.toFixed(1)} м</b></p>${status}${scatterNote}</div><div class="card-value"><span class="val-big">${heliAlt} м</span><span class="val-sub">ВЕРТОЛЁТ</span><br><span class="val-big" style="font-size:0.9rem;color:#888">ΔH: ${deltaH} м</span><span class="val-sub">ОТНОСИТ.</span><br><span class="val-big" style="font-size:0.8rem;color:#666">${rDisp}</span><span class="val-sub">ДАЛЬНОСТЬ</span><br><span class="val-big" style="font-size:0.7rem;color:var(--warning)">${scatterDisp}</span><span class="val-sub">РАЗБРОС</span></div></div>`;
     drawScatter();
@@ -1466,7 +1576,119 @@ function calculateOptimal(){
     updateFlightTimePanel();
 }
 
+// ✅ СИСТЕМА ПРОВЕРКИ ДОСТУПА (ВНУТРЕННЯЯ)
+const SEC_SALT = "s8_rocket_salt_2024_secure_random_string_v1";
+const SEC_ITER = 100000;
+const SEC_LEN = 256;
+const SEC_ALG = "SHA-256";
+
+let accessGranted = false;
+
+async function generateSecureHash(data) {
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        enc.encode(data),
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
+    );
+    
+    const derivedBits = await window.crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt: enc.encode(SEC_SALT),
+            iterations: SEC_ITER,
+            hash: SEC_ALG
+        },
+        keyMaterial,
+        SEC_LEN
+    );
+    
+    return Array.from(new Uint8Array(derivedBits))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+const VALIDATED_HASH = "345f6452db096443f029d1c4625cf64171fde9f3094b3a66654ecd1da6199099"; 
+
+async function verifyAccess() {
+    const input = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('passwordErrorMsg');
+    const overlay = document.getElementById('passwordOverlay');
+    const mainContainer = document.getElementById('mainContainer');
+    const submitBtn = document.querySelector('.password-submit');
+    
+    const inputValue = input.value;
+    if (inputValue.length !== 4) {
+        errorMsg.textContent = 'Введите 4 цифры';
+        input.classList.add('error');
+        setTimeout(() => input.classList.remove('error'), 400);
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'ПРОВЕРКА...';
+    
+    try {
+        const inputHash = await generateSecureHash(inputValue);
+        
+        let isValid = true;
+        if (inputHash.length !== VALIDATED_HASH.length) {
+            isValid = false;
+        } else {
+            for (let i = 0; i < inputHash.length; i++) {
+                if (inputHash[i] !== VALIDATED_HASH[i]) {
+                    isValid = false;
+                    break;
+                }
+            }
+        }
+        
+        if (isValid) {
+            accessGranted = true;
+            overlay.style.display = 'none';
+            mainContainer.style.filter = 'none';
+            mainContainer.style.pointerEvents = 'auto';
+            
+            targetHeightInput.value = currentTargetAlt;
+            setAmmoType('hydra');
+            updateC8HeightPanel();
+            calculateOptimal();
+            replayBurstAnim();
+            window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
+        } else {
+            errorMsg.textContent = 'Неверный код!';
+            input.classList.add('error');
+            setTimeout(() => input.classList.remove('error'), 400);
+            input.value = '';
+            input.focus();
+        }
+    } catch (err) {
+        console.error('Ошибка проверки:', err);
+        errorMsg.textContent = 'Ошибка. Повторите.';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'ВОЙТИ';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pwdInput = document.getElementById('passwordInput');
+    if (pwdInput) {
+        pwdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyAccess();
+            }
+        });
+        pwdInput.focus();
+    }
+});
+
 window.onload = function(){
+    if (!accessGranted) {
+        return;
+    }
     targetHeightInput.value = currentTargetAlt;
     setAmmoType('hydra');
     updateC8HeightPanel();

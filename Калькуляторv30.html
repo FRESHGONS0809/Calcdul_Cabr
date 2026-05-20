@@ -257,7 +257,7 @@
             <div class="static-range-text" id="staticRangeText">5810 м</div>
             <span class="static-range-sub" id="staticRangeSub">ФИКСИРОВАННАЯ ДАЛЬНОСТЬ</span>
         </div>
-        <button class="btn-calc" id="calcBtn" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
+        <button class="btn-calc" id="calcBtn" style="display:none;" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
         <div class="results" id="resultArea"></div>
 
         <div class="panels-row">
@@ -481,6 +481,7 @@ targetHeightInput.addEventListener('input', function() {
     if (isNaN(val) || val < 0) val = 0;
     currentTargetAlt = val;
     calculateOptimal();
+    replayBurstAnim();
 });
 
 // ✅ УПРАВЛЕНИЕ МЕНЮ
@@ -526,6 +527,14 @@ function handlePanelInput(clientY) {
 
 c8BurstPanel.addEventListener('mousedown', (e) => { isDraggingPanel = true; handlePanelInput(e.clientY); });
 c8BurstPanel.addEventListener('touchstart', (e) => { isDraggingPanel = true; handlePanelInput(e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты подрыва
+c8BurstPanelWrapper.addEventListener('wheel', (e) => {
+    if (!isAirburst || !['c8','s5','s13'].includes(currentAmmo)) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    setC8AirburstHeight(c8AirburstHeight + delta);
+}, { passive: false });
 
 window.addEventListener('mousemove', (e) => { if(isDraggingPanel) handlePanelInput(e.clientY); });
 window.addEventListener('touchmove', (e) => { if(isDraggingPanel) handlePanelInput(e.touches[0].clientY); });
@@ -691,8 +700,30 @@ rangeSlider.addEventListener('input', function() {
     } else {
         rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
     }
+    calculateOptimal();
     updateFlightTimePanel();
+    replayBurstAnim();
 });
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для ползунка дальности
+rangeWrapper.addEventListener('wheel', (e) => {
+    if (!rangeWrapper.classList.contains('collapsed')) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -100 : 100;
+        let newVal = parseInt(rangeSlider.value) + delta;
+        newVal = Math.max(parseInt(rangeSlider.min), Math.min(parseInt(rangeSlider.max), newVal));
+        rangeSlider.value = newVal;
+        rangeDisplay.textContent = newVal + ' м';
+        if (currentAmmo === 'hydra' && !isAirburst && newVal > 10800) {
+            rangeDisplay.classList.add('range-warning'); updateScatterExtra(true);
+        } else {
+            rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
+        }
+        calculateOptimal();
+        updateFlightTimePanel();
+        replayBurstAnim();
+    }
+}, { passive: false });
 function updateScatterExtra(isLongRange) {
     document.getElementById('scatterExtra').style.display = (isLongRange && currentAmmo==='hydra' && !isAirburst) ? 'block' : 'none';
 }
@@ -1491,10 +1522,8 @@ function calculateOptimal(){
         let realBurstH = '—';
         if(['c8','s5','s13'].includes(currentAmmo)){
             const realBurst = Math.max(0, c8AirburstHeight - 10);
-            realBurstH = realBurst + 'м';
+            scatterNote=`<div style="margin-top:8px;padding:6px;background:rgba(74,222,128,0.15);border-left:3px solid #4ade80;border-radius:4px;font-size:0.8rem;color:#4ade80;">☁️ Погрешность реальной высоты подрыва ±5 м • Высота −10м</div>`;
         }
-        const modeText = ['c8','s5','s13'].includes(currentAmmo) ? `Реальный подрыв ~${realBurstH} над целью` : 'Подрыв на 10-50м над целью';
-        scatterNote=`<div style="margin-top:8px;padding:6px;background:rgba(74,222,128,0.15);border-left:3px solid #4ade80;border-radius:4px;font-size:0.8rem;color:#4ade80;">☁️ ${modeText} • Высота −10м</div>`;
     }
     resultArea.innerHTML=`<div class="${cardClass}"><div class="card-info"><h3>${currentAmmo.toUpperCase()} • 0°</h3><p>ЦЕЛЬ: <b style="color:#fff">${currentTargetAlt.toFixed(1)} м</b></p>${status}${scatterNote}</div><div class="card-value"><span class="val-big">${heliAlt} м</span><span class="val-sub">ВЕРТОЛЁТ</span><br><span class="val-big" style="font-size:0.9rem;color:#888">ΔH: ${deltaH} м</span><span class="val-sub">ОТНОСИТ.</span><br><span class="val-big" style="font-size:0.8rem;color:#666">${rDisp}</span><span class="val-sub">ДАЛЬНОСТЬ</span><br><span class="val-big" style="font-size:0.7rem;color:var(--warning)">${scatterDisp}</span><span class="val-sub">РАЗБРОС</span></div></div>`;
     drawScatter();

@@ -45,6 +45,7 @@
         .height-label { font-size: 1rem; color: #777; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
         .height-number-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 12px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 4rem; font-weight: bold; text-align: center; width: 220px; padding: 10px 0; outline: none; transition: border-color 0.3s, box-shadow 0.3s; }
         .height-number-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
+        .height-input-wrapper.panel-active .height-number-input { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
         .burst-toggle-btn { width: 100%; padding: 18px; margin-bottom: 25px; background: rgba(74, 222, 128, 0.1); border: 2px solid var(--contact-color); color: var(--contact-color); font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px; }
         .burst-toggle-btn:hover { background: rgba(74, 222, 128, 0.2); box-shadow: 0 0 15px var(--contact-color); }
         .burst-toggle-btn.airburst { background: rgba(255, 165, 2, 0.15); border-color: var(--air-color); color: var(--air-color); }
@@ -249,7 +250,7 @@
         <button class="settings-btn" onclick="toggleServiceMenu()" title="Сервисное меню">⚙️</button>
     </div>
     <div class="content">
-        <div class="height-input-wrapper">
+        <div class="height-input-wrapper" id="targetHeightWrapper">
             <div class="height-label">ВЫСОТА ЦЕЛИ (м)</div>
             <input type="number" id="targetHeightInput" class="height-number-input" value="125" min="0" max="2000" step="1">
         </div>
@@ -477,6 +478,7 @@ let currentResults = {};
 let activeServiceAngle = 'hydra_contact';
 
 const targetHeightInput = document.getElementById('targetHeightInput');
+const targetHeightWrapper = document.getElementById('targetHeightWrapper');
 const rangeSlider = document.getElementById('rangeSlider');
 const rangeDisplay = document.getElementById('rangeValueDisplay');
 const resultArea = document.getElementById('resultArea');
@@ -505,6 +507,26 @@ targetHeightInput.addEventListener('input', function() {
     currentTargetAlt = val;
     calculateOptimal();
     replayBurstAnim();
+});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты цели
+targetHeightWrapper.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -10 : 10;
+    let newVal = parseInt(targetHeightInput.value) + delta;
+    newVal = Math.max(0, Math.min(9000, newVal));
+    targetHeightInput.value = newVal;
+    currentTargetAlt = newVal;
+    calculateOptimal();
+    replayBurstAnim();
+}, { passive: false });
+
+// Подсветка панели при наведении
+targetHeightWrapper.addEventListener('mouseenter', () => {
+    targetHeightWrapper.classList.add('panel-active');
+});
+targetHeightWrapper.addEventListener('mouseleave', () => {
+    targetHeightWrapper.classList.remove('panel-active');
 });
 
 // ✅ УПРАВЛЕНИЕ МЕНЮ

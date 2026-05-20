@@ -1576,22 +1576,19 @@ function calculateOptimal(){
     updateFlightTimePanel();
 }
 
-// ✅ ФУНКЦИЯ ПРОВЕРКИ ПАРОЛЯ (СКРЫТАЯ)
-// Улучшенная безопасность: PBKDF2 с солью и итерациями
-// Параметры хеширования (не содержат пароль в открытом виде)
-const SALT = "s8_rocket_salt_2024_secure_random_string_v1";
-const ITERATIONS = 100000;
-const KEY_LENGTH = 256;
-const ALGORITHM = "SHA-256";
+// ✅ СИСТЕМА ПРОВЕРКИ ДОСТУПА (ВНУТРЕННЯЯ)
+const SEC_SALT = "s8_rocket_salt_2024_secure_random_string_v1";
+const SEC_ITER = 100000;
+const SEC_LEN = 256;
+const SEC_ALG = "SHA-256";
 
-let isPasswordVerified = false;
+let accessGranted = false;
 
-// Функция для генерации хеша пароля с использованием Web Crypto API (PBKDF2)
-async function hashPassword(password) {
+async function generateSecureHash(data) {
     const enc = new TextEncoder();
     const keyMaterial = await window.crypto.subtle.importKey(
         "raw",
-        enc.encode(password),
+        enc.encode(data),
         { name: "PBKDF2" },
         false,
         ["deriveBits"]
@@ -1600,26 +1597,22 @@ async function hashPassword(password) {
     const derivedBits = await window.crypto.subtle.deriveBits(
         {
             name: "PBKDF2",
-            salt: enc.encode(SALT),
-            iterations: ITERATIONS,
-            hash: ALGORITHM
+            salt: enc.encode(SEC_SALT),
+            iterations: SEC_ITER,
+            hash: SEC_ALG
         },
         keyMaterial,
-        KEY_LENGTH
+        SEC_LEN
     );
     
-    // Преобразуем в hex строку
     return Array.from(new Uint8Array(derivedBits))
         .map(b => b.toString(16).padStart(2, '0'))
         .join('');
 }
 
-// Предварительно вычисленный хеш для пароля "0809"
-// Этот хеш был сгенерирован один раз с теми же параметрами (соль, итерации, алгоритм)
-// Даже при утечке этого хеша, злоумышленник не сможет восстановить пароль благодаря PBKDF2
-const CORRECT_PASSWORD_HASH = "345f6452db096443f029d1c4625cf64171fde9f3094b3a66654ecd1da6199099"; 
+const VALIDATED_HASH = "345f6452db096443f029d1c4625cf64171fde9f3094b3a66654ecd1da6199099"; 
 
-async function checkPassword() {
+async function verifyAccess() {
     const input = document.getElementById('passwordInput');
     const errorMsg = document.getElementById('passwordErrorMsg');
     const overlay = document.getElementById('passwordOverlay');
@@ -1634,21 +1627,18 @@ async function checkPassword() {
         return;
     }
     
-    // Блокируем кнопку на время вычисления хеша
     submitBtn.disabled = true;
     submitBtn.textContent = 'ПРОВЕРКА...';
     
     try {
-        // Вычисляем хеш введенного пароля
-        const inputHash = await hashPassword(inputValue);
+        const inputHash = await generateSecureHash(inputValue);
         
-        // Сравниваем хеши (constant-time comparison для защиты от timing attacks)
         let isValid = true;
-        if (inputHash.length !== CORRECT_PASSWORD_HASH.length) {
+        if (inputHash.length !== VALIDATED_HASH.length) {
             isValid = false;
         } else {
             for (let i = 0; i < inputHash.length; i++) {
-                if (inputHash[i] !== CORRECT_PASSWORD_HASH[i]) {
+                if (inputHash[i] !== VALIDATED_HASH[i]) {
                     isValid = false;
                     break;
                 }
@@ -1656,12 +1646,11 @@ async function checkPassword() {
         }
         
         if (isValid) {
-            isPasswordVerified = true;
+            accessGranted = true;
             overlay.style.display = 'none';
             mainContainer.style.filter = 'none';
             mainContainer.style.pointerEvents = 'auto';
             
-            // Инициализация после успешного ввода пароля
             targetHeightInput.value = currentTargetAlt;
             setAmmoType('hydra');
             updateC8HeightPanel();
@@ -1669,40 +1658,37 @@ async function checkPassword() {
             replayBurstAnim();
             window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
         } else {
-            errorMsg.textContent = 'Неверный пароль!';
+            errorMsg.textContent = 'Неверный код!';
             input.classList.add('error');
             setTimeout(() => input.classList.remove('error'), 400);
             input.value = '';
             input.focus();
         }
     } catch (err) {
-        console.error('Ошибка хеширования:', err);
-        errorMsg.textContent = 'Ошибка проверки. Попробуйте снова.';
+        console.error('Ошибка проверки:', err);
+        errorMsg.textContent = 'Ошибка. Повторите.';
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'ВОЙТИ';
     }
 }
 
-// Обработка нажатия Enter в поле пароля
 document.addEventListener('DOMContentLoaded', function() {
-    const passwordInput = document.getElementById('passwordInput');
-    if (passwordInput) {
-        passwordInput.addEventListener('keypress', function(e) {
+    const pwdInput = document.getElementById('passwordInput');
+    if (pwdInput) {
+        pwdInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                checkPassword();
+                verifyAccess();
             }
         });
-        passwordInput.focus();
+        pwdInput.focus();
     }
 });
 
 window.onload = function(){
-    if (!isPasswordVerified) {
-        // Если пароль еще не введен, ждем ввода
+    if (!accessGranted) {
         return;
     }
-    // Если пароль уже введен (например, при перезагрузке с кэшем), инициализируем
     targetHeightInput.value = currentTargetAlt;
     setAmmoType('hydra');
     updateC8HeightPanel();

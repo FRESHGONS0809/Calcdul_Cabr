@@ -39,6 +39,7 @@
 
         .header { background: #15171c; padding: 20px; text-align: center; letter-spacing: 3px; font-weight: 800; color: var(--text-highlight); font-size: 1.3rem; text-transform: uppercase; position: relative; }
         .settings-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: transparent; border: 2px solid var(--border); color: var(--text-main); font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10; }
+        .settings-btn:nth-of-type(1) { right: 70px; }
         .settings-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); box-shadow: 0 0 12px var(--text-highlight); }
         .content { padding: 35px; }
         .height-input-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 35px; }
@@ -247,6 +248,7 @@
     </div>
     <div class="header">
         ТАКТИЧЕСКИЙ РАСЧЕТ ОГНЯ v29.3
+        <button class="settings-btn" onclick="toggleCalculator()" title="Калькулятор">🧮</button>
         <button class="settings-btn" onclick="toggleServiceMenu()" title="Сервисное меню">⚙️</button>
     </div>
     <div class="content">
@@ -1696,6 +1698,133 @@ window.onload = function(){
     replayBurstAnim();
     window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
 };
+
+// ✅ КЛАССИЧЕСКИЙ КАЛЬКУЛЯТОР (Ctrl+Alt+Z)
+let calcVisible = false;
+const calcHTML = `
+<div id="overlay-calculator" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(5px);">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1f2229;border:3px solid #66fcf1;border-radius:15px;padding:30px;box-shadow:0 15px 60px rgba(0,0,0,0.95);min-width:450px;max-width:90vw;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span style="color:#66fcf1;font-family:var(--font-mono);font-weight:700;font-size:1.5rem;letter-spacing:2px;">КАЛЬКУЛЯТОР</span>
+      <button id="calc-close-btn" style="background:transparent;border:none;color:#ff4b4b;font-size:2rem;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <div id="calc-display" style="background:#0a0c10;border:2px solid #2d3038;border-radius:10px;padding:20px;text-align:right;font-family:var(--font-mono);font-size:2.5rem;color:#c5c6c7;margin-bottom:20px;min-height:80px;word-break:break-all;letter-spacing:1px;"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <button class="calc-btn" data-val="C" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#ff4b4b;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">C</button>
+      <button class="calc-btn" data-val="(" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">(</button>
+      <button class="calc-btn" data-val=")" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">)</button>
+      <button class="calc-btn" data-val="/" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">÷</button>
+      <button class="calc-btn" data-val="7" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">7</button>
+      <button class="calc-btn" data-val="8" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">8</button>
+      <button class="calc-btn" data-val="9" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">9</button>
+      <button class="calc-btn" data-val="*" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">×</button>
+      <button class="calc-btn" data-val="4" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">4</button>
+      <button class="calc-btn" data-val="5" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">5</button>
+      <button class="calc-btn" data-val="6" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">6</button>
+      <button class="calc-btn" data-val="-" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">−</button>
+      <button class="calc-btn" data-val="1" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">1</button>
+      <button class="calc-btn" data-val="2" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">2</button>
+      <button class="calc-btn" data-val="3" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">3</button>
+      <button class="calc-btn" data-val="+" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">+</button>
+      <button class="calc-btn" data-val="0" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;grid-column:span 2;transition:all 0.2s;">0</button>
+      <button class="calc-btn" data-val="." style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">.</button>
+      <button class="calc-btn" data-val="=" style="padding:20px;background:#66fcf1;border:none;border-radius:8px;color:#0b0c10;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">=</button>
+    </div>
+    <div style="text-align:center;margin-top:15px;font-size:0.8rem;color:#666;font-family:var(--font-mono);">Нажмите кнопку 🧮 для открытия/закрытия</div>
+  </div>
+</div>`;
+
+(function initCalculator() {
+    // Добавляем HTML калькулятора в body
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = calcHTML;
+    const calcOverlay = tempDiv.firstElementChild;
+    document.body.appendChild(calcOverlay);
+
+    const calcDisplay = document.getElementById('calc-display');
+    const closeBtn = document.getElementById('calc-close-btn');
+    const calcButtons = document.querySelectorAll('.calc-btn');
+    
+    let calcExpression = '';
+    let justCalculated = false;
+
+    function updateDisplay(value) {
+        calcDisplay.textContent = value || '0';
+    }
+
+    function safeCalculate(expr) {
+        try {
+            // Разрешаем только цифры, операторы и скобки
+            if (!/^[\d+\-*/().\s]+$/.test(expr)) {
+                return 'Ошибка';
+            }
+            // Используем Function вместо eval для безопасности
+            const result = new Function('return ' + expr)();
+            if (!isFinite(result) || isNaN(result)) {
+                return 'Ошибка';
+            }
+            // Округляем до разумного количества знаков
+            return String(Math.round(result * 1000000) / 1000000);
+        } catch (e) {
+            return 'Ошибка';
+        }
+    }
+
+    // Обработчик кнопок калькулятора
+    calcButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const val = btn.getAttribute('data-val');
+            
+            if (val === 'C') {
+                calcExpression = '';
+                justCalculated = false;
+                updateDisplay('0');
+            } else if (val === '=') {
+                if (calcExpression) {
+                    const result = safeCalculate(calcExpression);
+                    updateDisplay(result);
+                    calcExpression = result === 'Ошибка' ? '' : result;
+                    justCalculated = true;
+                }
+            } else {
+                if (justCalculated && !isNaN(val)) {
+                    calcExpression = '';
+                    justCalculated = false;
+                }
+                calcExpression += val;
+                updateDisplay(calcExpression);
+            }
+        });
+    });
+
+    // Закрытие по кнопке X
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCalculator();
+    });
+
+    // Закрытие по клику на оверлей
+    calcOverlay.addEventListener('click', (e) => {
+        if (e.target === calcOverlay) {
+            toggleCalculator();
+        }
+    });
+
+    // Предотвращаем всплытие событий внутри калькулятора
+    calcOverlay.querySelector('div[style*="position:absolute"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Функция переключения видимости
+    window.toggleCalculator = function() {
+        calcVisible = !calcVisible;
+        calcOverlay.style.display = calcVisible ? 'block' : 'none';
+        if (calcVisible) {
+            calcDisplay.focus();
+        }
+    };
+})();
 </script>
 </body>
 </html>

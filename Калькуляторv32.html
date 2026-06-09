@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ТАКТИЧЕСКИЙ РАСЧЕТ ОГНЯ v29.3 — C8/HYDRA/С-5/С-13</title>
+    <style>
+        :root {
+            --bg-color: #0b0c10; --card-bg: #1f2229; --text-main: #c5c6c7;
+            --text-highlight: #66fcf1; --accent-zero: #a29bfe; --accent-flat: #45a29e;
+            --accent-steep: #d4af37; --danger: #ff4b4b; --warning: #ffb700;
+            --border: #2d3038; --font-mono: 'Courier New', monospace; --font-ui: 'Segoe UI', sans-serif;
+            --c8-primary: #ff6b6b; --c8-secondary: #ffa502; --c8-air10: #ff8c69; --c8-air30: #ffb347;
+            --s5-primary: #4ade80; --s5-secondary: #22c55e; --s5-air10: #86efac; --s5-air30: #4ade80;
+            --s13-primary: #60a5fa; --s13-secondary: #3b82f6; --s13-air10: #93c5fd; --s13-air30: #60a5fa;
+            --contact-color: #4ade80; --air-color: #ffa502;
+            --airburst-color: #4ade80;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; user-select: none; }
+        body { background: var(--bg-color); color: var(--text-main); font-family: var(--font-ui); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 30px; }
+        .container { background: var(--card-bg); width: 100%; max-width: 1100px; border-radius: 10px; border: 2px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.85); overflow: hidden; position: relative; }
+        
+        /* ✅ ВЫДВИГАЮЩЕЕСЯ МЕНЮ */
+        .ammo-selector-wrapper { position: relative; width: 100%; max-width: 340px; margin: 0 auto 20px auto; z-index: 20; }
+        .ammo-trigger-btn { width: 100%; padding: 14px 20px; background: var(--card-bg); border: 2px solid var(--border); color: var(--text-main); font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; cursor: pointer; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+        .ammo-trigger-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); }
+        .arrow-icon { transition: transform 0.3s; font-size: 0.8rem; margin-left: 10px; }
+        .ammo-trigger-btn.open .arrow-icon { transform: rotate(180deg); }
+        .ammo-dropdown { position: absolute; top: calc(100% + 8px); left: 0; width: 100%; background: var(--card-bg); border: 2px solid var(--border); border-radius: 8px; overflow: hidden; max-height: 0; opacity: 0; transform: translateY(-10px); transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); z-index: 50; box-shadow: 0 10px 25px rgba(0,0,0,0.6); }
+        .ammo-dropdown.open { max-height: 300px; opacity: 1; transform: translateY(0); }
+        .ammo-option { width: 100%; padding: 12px 20px; background: transparent; border: none; color: #888; font-family: var(--font-mono); font-weight: 600; font-size: 1rem; cursor: pointer; text-align: left; transition: all 0.15s; border-bottom: 1px solid var(--border); }
+        .ammo-option:last-child { border-bottom: none; }
+        .ammo-option:hover { background: rgba(102, 252, 241, 0.1); color: var(--text-highlight); }
+        .ammo-option.active { font-weight: 700; }
+        .ammo-option.active[data-type="hydra"] { background: rgba(102, 252, 241, 0.2); color: var(--text-highlight); }
+        .ammo-option.active[data-type="c8"] { background: rgba(255, 107, 107, 0.2); color: var(--c8-primary); }
+        .ammo-option.active[data-type="s5"] { background: rgba(74, 222, 128, 0.2); color: var(--s5-primary); }
+        .ammo-option.active[data-type="s13"] { background: rgba(96, 165, 250, 0.2); color: var(--s13-primary); }
+
+        .header { background: #15171c; padding: 20px; text-align: center; letter-spacing: 3px; font-weight: 800; color: var(--text-highlight); font-size: 1.3rem; text-transform: uppercase; position: relative; }
+        .settings-btn { position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: transparent; border: 2px solid var(--border); color: var(--text-main); font-size: 1.5rem; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; z-index: 10; }
+        .settings-btn:nth-of-type(1) { right: 70px; }
+        .settings-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); box-shadow: 0 0 12px var(--text-highlight); }
+        .content { padding: 35px; }
+        .height-input-wrapper { display: flex; flex-direction: column; align-items: center; margin-bottom: 35px; }
+        .height-label { font-size: 1rem; color: #777; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
+        .height-number-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 12px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 4rem; font-weight: bold; text-align: center; width: 220px; padding: 10px 0; outline: none; transition: border-color 0.3s, box-shadow 0.3s; }
+        .height-number-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
+        .height-input-wrapper.panel-active .height-number-input { border-color: var(--text-highlight); box-shadow: 0 0 15px rgba(102, 252, 241, 0.2); }
+        .burst-toggle-btn { width: 100%; padding: 18px; margin-bottom: 25px; background: rgba(74, 222, 128, 0.1); border: 2px solid var(--contact-color); color: var(--contact-color); font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; cursor: pointer; border-radius: 8px; transition: all 0.3s ease; text-transform: uppercase; letter-spacing: 2px; }
+        .burst-toggle-btn:hover { background: rgba(74, 222, 128, 0.2); box-shadow: 0 0 15px var(--contact-color); }
+        .burst-toggle-btn.airburst { background: rgba(255, 165, 2, 0.15); border-color: var(--air-color); color: var(--air-color); }
+        .burst-toggle-btn.airburst:hover { background: rgba(255, 165, 2, 0.25); box-shadow: 0 0 15px var(--air-color); }
+        
+        /* ✅ ИНТЕРАКТИВНАЯ ПАНЕЛЬ ВЫБОРА ВЫСОТЫ (0-50М) */
+        .burst-height-panel-wrapper { display: none; margin: 0 auto 25px auto; width: 260px; height: 260px; }
+        .burst-height-panel-wrapper.active { display: block; }
+        .burst-height-panel { width: 100%; height: 100%; background: #111418; border: 2px solid var(--c8-secondary); border-radius: 10px; position: relative; cursor: ns-resize; touch-action: none; overflow: hidden; }
+        .panel-grid { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: linear-gradient(0deg, rgba(255,165,2,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,165,2,0.05) 1px, transparent 1px); background-size: 100% 52px; pointer-events: none; }
+        .panel-ground { position: absolute; bottom: 20px; left: 10%; right: 10%; height: 3px; background: linear-gradient(90deg, transparent, #555, transparent); }
+        .panel-target { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); font-size: 1.8rem; filter: drop-shadow(0 0 4px rgba(0,0,0,0.8)); }
+        .panel-missile { position: absolute; left: 50%; transform: translateX(-50%); width: 14px; height: 14px; background: var(--c8-secondary); border-radius: 50%; box-shadow: 0 0 12px var(--c8-secondary), 0 0 4px #fff; transition: bottom 0.15s ease-out; z-index: 5; }
+        .panel-missile::after { content: ''; position: absolute; top: 50%; left: 50%; width: 24px; height: 24px; border: 1px dashed var(--c8-secondary); border-radius: 50%; transform: translate(-50%, -50%); animation: pulseRing 1.5s infinite; }
+        @keyframes pulseRing { 0% { transform: translate(-50%, -50%) scale(0.8); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; } }
+        .panel-height-label { position: absolute; left: 50%; transform: translateX(-50%); font-family: var(--font-mono); font-size: 0.85rem; color: var(--c8-secondary); font-weight: bold; white-space: nowrap; text-shadow: 0 0 4px #000; pointer-events: none; z-index: 6; }
+        .panel-height-value { position: absolute; top: 15px; left: 0; right: 0; text-align: center; font-family: var(--font-mono); font-size: 1.6rem; color: #fff; font-weight: bold; text-shadow: 0 0 8px rgba(255,165,2,0.4); pointer-events: none; }
+        .panel-hint { text-align: center; font-size: 0.75rem; color: #666; margin-top: 5px; font-family: var(--font-mono); }
+        
+        .burst-height-selector { display: none; }
+
+        .range-wrapper { overflow: hidden; transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1); max-height: 150px; opacity: 1; margin-bottom: 30px; }
+        .range-wrapper.collapsed { max-height: 0; opacity: 0; margin-bottom: 0; transform: scaleY(0); }
+        .static-range-display { text-align: center; margin-bottom: 30px; opacity: 0; transition: opacity 0.4s ease-in; max-height: 0; overflow: hidden; }
+        .static-range-display.visible { opacity: 1; max-height: 100px; }
+        .static-range-text { font-family: var(--font-mono); font-size: 2.6rem; font-weight: bold; color: var(--c8-secondary); text-shadow: 0 0 15px rgba(255, 165, 2, 0.4); border-bottom: 2px solid var(--c8-secondary); display: inline-block; padding-bottom: 5px; }
+        .static-range-sub { display: block; font-size: 0.9rem; color: #888; margin-top: 5px; letter-spacing: 2px; }
+        .range-section { margin-bottom: 0; }
+        .range-labels { display: flex; justify-content: space-between; font-size: 1rem; color: #666; margin-bottom: 10px; font-family: var(--font-mono); font-weight: 600; }
+        input[type=range] { -webkit-appearance: none; width: 100%; height: 14px; border-radius: 7px; outline: none; background: linear-gradient(to right, #10b981 0%, #f59e0b 50%, #ef4444 100%); }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; border-radius: 50%; background: #fff; border: 3px solid #000; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.5); transition: transform 0.1s; }
+        input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.1); }
+        .current-range { text-align: center; font-family: var(--font-mono); font-size: 2.6rem; color: #fff; margin-top: 12px; font-weight: bold; transition: color 0.3s; }
+        @keyframes pulseRed { 0%, 100% { color: #f87171; text-shadow: 0 0 8px rgba(248,113,113,0.3); } 50% { color: #ff4b4b; text-shadow: 0 0 18px rgba(255,75,75,0.7); } }
+        .range-warning { animation: pulseRed 1.8s ease-in-out infinite; }
+        .btn-calc { width: 100%; padding: 22px; background: transparent; border: 2px solid var(--text-highlight); color: var(--text-highlight); font-family: var(--font-mono); font-weight: 800; font-size: 1.3rem; text-transform: uppercase; cursor: pointer; transition: all 0.2s; letter-spacing: 2px; border-radius: 8px; }
+        .btn-calc.c8 { border-color: var(--c8-primary); color: var(--c8-primary); }
+        .btn-calc.s5 { border-color: var(--s5-primary); color: var(--s5-primary); }
+        .btn-calc.s13 { border-color: var(--s13-primary); color: var(--s13-primary); }
+        .btn-calc:hover { background: var(--text-highlight); color: #000; box-shadow: 0 0 25px var(--text-highlight); }
+        .btn-calc:active { transform: scale(0.98); }
+        .results { margin-top: 30px; display: flex; flex-direction: column; gap: 15px; }
+        .solution-card { background: #15171c; border-left: 6px solid #555; padding: 22px; display: flex; justify-content: space-between; align-items: center; opacity: 0.75; transition: all 0.3s; border-radius: 8px; }
+        .solution-card.active { opacity: 1; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .solution-card.angle-0 { border-color: var(--accent-zero); }
+        .solution-card.c8-contact { border-color: var(--c8-primary); }
+        .solution-card.c8-air10 { border-color: var(--c8-air10); }
+        .solution-card.c8-air30 { border-color: var(--c8-air30); }
+        .solution-card.s5-contact { border-color: var(--s5-primary); }
+        .solution-card.s5-air10 { border-color: var(--s5-air10); }
+        .solution-card.s5-air30 { border-color: var(--s5-air30); }
+        .solution-card.s13-contact { border-color: var(--s13-primary); }
+        .solution-card.s13-air10 { border-color: var(--s13-air10); }
+        .solution-card.s13-air30 { border-color: var(--s13-air30); }
+        .solution-card.disabled { border-color: #444; filter: grayscale(1); }
+        .card-info h3 { font-size: 1.5rem; margin-bottom: 6px; color: #fff; font-family: var(--font-mono); font-weight: 700; }
+        .card-info p { font-size: 1rem; color: #999; line-height: 1.4; }
+        .card-value { text-align: right; font-family: var(--font-mono); }
+        .val-big { font-size: 1.9rem; font-weight: bold; color: #fff; display: block; }
+        .val-sub { font-size: 0.9rem; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+        .status-badge { display: inline-block; padding: 5px 12px; border-radius: 5px; font-size: 0.85rem; font-weight: 800; margin-top: 10px; text-transform: uppercase; }
+        .st-ok { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #34d399; }
+        .st-warn { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+        .st-err { background: rgba(248,113,113,0.2); color: #f87171; border: 1px solid #f87171; }
+        .panels-row { margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 800px) { .panels-row { grid-template-columns: 1fr; } }
+        .panel-box { background: #15171c; border: 2px solid var(--border); border-radius: 10px; padding: 20px; }
+        .panel-title { text-align: center; font-family: var(--font-mono); font-size: 1rem; color: var(--text-highlight); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+        .scatter-canvas-wrapper { display: flex; justify-content: center; margin-bottom: 12px; }
+        .scatter-canvas { width: 100%; max-width: 320px; height: 320px; border: 1px solid var(--border); border-radius: 6px; background: #0a0c10; }
+        .scatter-info { text-align: center; font-size: 0.85rem; color: #777; font-family: var(--font-mono); }
+        .scatter-extra { color: var(--warning); font-weight: 600; margin-top: 5px; display: none; }
+        .burst-canvas-wrapper { display: flex; justify-content: center; margin-bottom: 10px; }
+        .burst-canvas { width: 100%; height: 280px; border: 1px solid var(--border); border-radius: 8px; background: #0a0d12; }
+        .anim-controls { display: flex; gap: 10px; margin-bottom: 12px; align-items: center; flex-wrap: wrap; }
+        .anim-btn { padding: 7px 18px; background: #1a1d24; border: 1px solid var(--border); color: #888; font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; text-transform: uppercase; }
+        .anim-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); }
+        .anim-btn:hover.replay-btn { border-color: var(--warning); color: var(--warning); }
+        .anim-status { text-align: center; font-size: 0.8rem; color: #555; font-family: var(--font-mono); margin-top: 6px; min-height: 16px; transition: color 0.3s; }
+        .anim-legend { display: flex; gap: 16px; margin-top: 10px; flex-wrap: wrap; justify-content: center; }
+        .anim-leg { display: flex; align-items: center; gap: 5px; font-size: 0.75rem; color: #666; font-family: var(--font-mono); }
+        .anim-leg-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .flight-time-display { background: #0f1115; border: 1px solid var(--border); border-radius: 8px; padding: 20px; text-align: center; margin-bottom: 15px; }
+        .flight-time-value { font-family: var(--font-mono); font-size: 3.5rem; font-weight: bold; color: var(--text-highlight); line-height: 1; margin: 10px 0; }
+        .flight-time-unit { font-size: 1.2rem; color: #888; margin-left: 5px; }
+        .flight-time-status { display: inline-block; padding: 4px 12px; border-radius: 4px; font-size: 0.8rem; font-weight: 600; margin-top: 8px; text-transform: uppercase; }
+        .ft-ok { background: rgba(16,185,129,0.2); color: #34d399; border: 1px solid #34d399; }
+        .ft-warn { background: rgba(251,191,36,0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+        .ft-err { background: rgba(248,113,113,0.2); color: #f87171; border: 1px solid #f87171; }
+        .flight-time-details { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; font-family: var(--font-mono); margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .ft-detail { text-align: left; }
+        .ft-label { color: #666; display: block; margin-bottom: 3px; font-size: 0.75rem; text-transform: uppercase; }
+        .ft-value { color: var(--text-main); font-weight: 600; }
+        .flight-time-formula { background: #0a0c10; border-left: 3px solid var(--accent-steep); padding: 12px; margin-top: 15px; font-family: var(--font-mono); font-size: 0.8rem; color: #aaa; line-height: 1.5; }
+        .formula-title { color: var(--warning); font-weight: 600; margin-bottom: 5px; display: block; }
+        .info-block { background: #111418; border: 2px solid #333; padding: 18px; border-radius: 8px; font-size: 0.95rem; color: #888; margin-top: 25px; line-height: 1.5; text-align: center; }
+        
+        /* ✅ ФУТЕР С КРЕДИТАМИ */
+        .footer { margin-top: 30px; text-align: center; font-size: 0.8rem; color: #555; font-family: var(--font-mono); border-top: 2px solid #222; padding-top: 15px; letter-spacing: 1px; }
+        .footer-credits { margin-top: 8px; font-size: 0.75rem; color: #444; }
+        .footer-credits span { color: var(--text-highlight); font-weight: 600; }
+
+        /* ✅ ПАНЕЛЬ КООРДИНАТНОГО РАСЧЕТА */
+        .coord-panel { margin-top: 30px; background: #15171c; border: 2px solid var(--border); border-radius: 10px; padding: 20px; }
+        .coord-panel-title { text-align: center; font-family: var(--font-mono); font-size: 1rem; color: var(--text-highlight); margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+        .coord-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        @media (max-width: 600px) { .coord-inputs { grid-template-columns: 1fr; } }
+        .coord-group { display: flex; flex-direction: column; gap: 8px; }
+        .coord-label { font-size: 0.85rem; color: #888; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; }
+        .coord-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 6px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 1.5rem; font-weight: bold; text-align: center; padding: 8px; width: 100%; outline: none; transition: border-color 0.2s; }
+        .coord-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 10px rgba(102, 252, 241, 0.2); }
+        .coord-input::placeholder { color: #555; }
+        .coord-calc-btn { width: 100%; padding: 14px; background: transparent; border: 2px solid var(--accent-flat); color: var(--accent-flat); font-family: var(--font-mono); font-weight: 700; font-size: 1rem; cursor: pointer; border-radius: 6px; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .coord-calc-btn:hover { background: var(--accent-flat); color: #000; box-shadow: 0 0 15px var(--accent-flat); }
+        .coord-result { margin-top: 15px; text-align: center; padding: 15px; background: rgba(102, 252, 241, 0.1); border-radius: 6px; border-left: 4px solid var(--text-highlight); }
+        .coord-result-value { font-family: var(--font-mono); font-size: 2rem; font-weight: bold; color: var(--text-highlight); }
+        .coord-result-unit { font-size: 1rem; color: #888; margin-left: 5px; }
+        .coord-result-detail { font-size: 0.85rem; color: #777; margin-top: 8px; font-family: var(--font-mono); }
+        .coord-hint { margin-top: 10px; font-size: 0.75rem; color: #666; font-family: var(--font-mono); text-align: center; line-height: 1.4; }
+        .coord-hint b { color: var(--warning); }
+        
+        .service-menu-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 1000; padding: 20px; }
+        .service-menu-overlay.active { display: flex; }
+        
+        /* ✅ МОДАЛЬНОЕ ОКНО ВВОДА ПАРОЛЯ */
+        .password-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+        .password-modal { background: var(--card-bg); border: 2px solid var(--text-highlight); border-radius: 12px; padding: 40px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 0 40px rgba(102, 252, 241, 0.3); }
+        .password-title { font-family: var(--font-mono); font-size: 1.4rem; color: var(--text-highlight); margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; }
+        .password-input { background: #0a0c10; border: 2px solid var(--border); border-radius: 8px; color: var(--text-highlight); font-family: var(--font-mono); font-size: 2rem; font-weight: bold; text-align: center; width: 100%; padding: 15px; margin-bottom: 20px; outline: none; transition: all 0.3s; letter-spacing: 5px; }
+        .password-input:focus { border-color: var(--text-highlight); box-shadow: 0 0 20px rgba(102, 252, 241, 0.4); }
+        .password-input.error { border-color: var(--danger); animation: shake 0.4s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+        .password-submit { width: 100%; padding: 16px; background: var(--text-highlight); border: none; color: #000; font-family: var(--font-mono); font-weight: 700; font-size: 1.2rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 2px; }
+        .password-submit:hover { box-shadow: 0 0 25px var(--text-highlight); transform: translateY(-2px); }
+        .password-error-msg { color: var(--danger); font-family: var(--font-mono); font-size: 0.9rem; margin-top: 15px; min-height: 20px; font-weight: 600; }
+        
+        .service-menu { background: var(--card-bg); border: 2px solid var(--border); border-radius: 12px; width: 100%; max-width: 1200px; max-height: 90vh; overflow: hidden; display: flex; flex-direction: column; }
+        .service-menu-header { background: #15171c; padding: 18px 25px; border-bottom: 2px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .service-menu-title { font-family: var(--font-mono); font-weight: 700; color: var(--text-highlight); font-size: 1.2rem; letter-spacing: 2px; text-transform: uppercase; }
+        .service-menu-close { background: transparent; border: 2px solid var(--danger); color: var(--danger); font-family: var(--font-mono); font-weight: 600; padding: 8px 20px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+        .service-menu-close:hover { background: var(--danger); color: #000; }
+        .service-menu-content { padding: 20px; overflow-y: auto; flex: 1; }
+        .angle-tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .angle-tab { padding: 10px 25px; background: #222; border: 2px solid var(--border); color: #888; font-family: var(--font-mono); font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; }
+        .angle-tab:hover { border-color: var(--text-highlight); color: var(--text-highlight); }
+        .angle-tab.active { background: var(--text-highlight); color: #000; border-color: var(--text-highlight); box-shadow: 0 0 12px var(--text-highlight); }
+        .angle-tab.angle-0.active { background: var(--accent-zero); }
+        .angle-tab.angle-air10.active, .angle-tab.angle-air30.active { background: var(--air-color); color: #000; border-color: var(--air-color); }
+        .angle-tab.angle-hydra-air.active { background: var(--air-color); color: #000; border-color: var(--air-color); }
+        .angle-tab.angle-c8-contact.active { background: var(--c8-primary); border-color: var(--c8-primary); }
+        .angle-tab.angle-c8-air.active { background: var(--c8-secondary); border-color: var(--c8-secondary); }
+        .angle-tab.angle-s5-contact.active { background: var(--s5-primary); border-color: var(--s5-primary); }
+        .angle-tab.angle-s5-air.active { background: var(--s5-secondary); border-color: var(--s5-secondary); }
+        .angle-tab.angle-s13-contact.active { background: var(--s13-primary); border-color: var(--s13-primary); }
+        .angle-tab.angle-s13-air.active { background: var(--s13-secondary); border-color: var(--s13-secondary); }
+        .data-table-container { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 15px; }
+        .data-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.9rem; }
+        .data-table th, .data-table td { padding: 10px 12px; border: 1px solid var(--border); text-align: center; }
+        .data-table th { background: #15171c; color: var(--text-highlight); font-weight: 700; position: sticky; top: 0; }
+        .data-table td { background: #1a1d24; }
+        .data-table input { width: 80px; padding: 6px 8px; background: #252932; border: 1px solid var(--border); border-radius: 4px; color: var(--text-main); font-family: var(--font-mono); font-size: 0.9rem; text-align: center; }
+        .data-table input:focus { outline: none; border-color: var(--text-highlight); box-shadow: 0 0 8px var(--text-highlight); }
+        .table-note { margin-top: 15px; padding: 12px; background: rgba(251,191,36,0.1); border: 1px solid rgba(251,191,36,0.3); border-radius: 6px; font-size: 0.85rem; color: #fbbf24; text-align: center; }
+        .service-buttons { display: flex; gap: 15px; margin-top: 20px; flex-wrap: wrap; }
+        .save-btn, .copy-btn { padding: 14px 30px; background: var(--text-highlight); border: none; color: #000; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; }
+        .save-btn:hover, .copy-btn:hover { box-shadow: 0 0 20px var(--text-highlight); transform: translateY(-2px); }
+        .save-btn:active, .copy-btn:active { transform: translateY(0); }
+        .copy-btn { background: var(--accent-flat); color: #fff; }
+        .copy-btn:hover { background: var(--accent-flat); box-shadow: 0 0 20px var(--accent-flat); }
+        .copy-success { background: rgba(16,185,129,0.2); color: #34d399; padding: 10px 20px; border-radius: 6px; margin-top: 15px; text-align: center; font-weight: 600; display: none; }
+        .copy-success.show { display: block; animation: fadeInOut 2s ease-in-out; }
+        @keyframes fadeInOut { 0%{opacity:0}10%{opacity:1}90%{opacity:1}100%{opacity:0} }
+        #c8Controls { display: none; }
+    </style>
+</head>
+<body>
+<!-- ✅ МОДАЛЬНОЕ ОКНО ВВОДА ПАРОЛЯ -->
+<div class="password-overlay" id="passwordOverlay">
+    <div class="password-modal">
+        <div class="password-title">🔐 ВВЕДИТЕ ПАРОЛЬ ДОСТУПА</div>
+        <input type="password" id="passwordInput" class="password-input" maxlength="4" placeholder="••••" inputmode="numeric">
+        <button class="password-submit" onclick="checkPassword()">ВОЙТИ</button>
+        <div class="password-error-msg" id="passwordErrorMsg"></div>
+    </div>
+</div>
+
+<div class="container" id="mainContainer" style="filter: blur(8px); pointer-events: none;">
+    <div class="ammo-selector-wrapper">
+        <button class="ammo-trigger-btn" onclick="toggleAmmoMenu()">
+            <span id="currentAmmoLabel">🎯 HYDRA 70</span>
+            <span class="arrow-icon">▼</span>
+        </button>
+        <div class="ammo-dropdown" id="ammoDropdown">
+            <button class="ammo-option active" data-type="hydra" onclick="setAmmoType('hydra')">🎯 HYDRA 70</button>
+            <button class="ammo-option" data-type="c8" onclick="setAmmoType('c8')">💥 C8</button>
+            <button class="ammo-option" data-type="s5" onclick="setAmmoType('s5')">🚀 С-5</button>
+            <button class="ammo-option" data-type="s13" onclick="setAmmoType('s13')">🚀 С-13</button>
+        </div>
+    </div>
+    <div class="header">
+        ТАКТИЧЕСКИЙ РАСЧЕТ ОГНЯ v29.3
+        <button class="settings-btn" onclick="toggleCalculator()" title="Калькулятор">🧮</button>
+        <button class="settings-btn" onclick="toggleServiceMenu()" title="Сервисное меню">⚙️</button>
+    </div>
+    <div class="content">
+        <div class="height-input-wrapper" id="targetHeightWrapper">
+            <div class="height-label">ВЫСОТА ЦЕЛИ (м)</div>
+            <input type="number" id="targetHeightInput" class="height-number-input" value="125" min="0" max="2000" step="1">
+        </div>
+        <button id="burstToggle" class="burst-toggle-btn" onclick="toggleBurstMode()">🎯 КОНТАКТНЫЙ ПОДРЫВ</button>
+        
+        <!-- ✅ ИНТЕРАКТИВНАЯ ПАНЕЛЬ ВЫБОТА ВЫСОТЫ (0-50М) -->
+        <div class="burst-height-panel-wrapper" id="c8BurstPanelWrapper">
+            <div class="burst-height-panel" id="c8BurstPanel">
+                <div class="panel-grid"></div>
+                <div class="panel-height-value">Подрыв: <span id="panelHeightVal">25 м</span></div>
+                <div class="panel-height-label" id="panelHeightLabel">25 м</div>
+                <div class="panel-missile" id="panelMissile"></div>
+                <div class="panel-target">🧍</div>
+                <div class="panel-ground"></div>
+            </div>
+            <div class="panel-hint">👆 Кликните или перетащите маркер для выбора высоты (0–50 м)</div>
+        </div>
+
+        <div id="c8Controls" style="display:none;"></div>
+        <div class="range-wrapper" id="rangeWrapper">
+            <div class="range-section">
+                <div class="range-labels"><span id="minRangeLabel">МИН: 3.5 км</span><span id="maxRangeLabel">МАКС: 11.5 км</span></div>
+                <input type="range" id="rangeSlider" min="3500" max="11500" step="10" value="6000">
+                <div class="current-range" id="rangeValueDisplay">6000 м</div>
+            </div>
+        </div>
+        <div class="static-range-display" id="staticRangeDisplay">
+            <div class="static-range-text" id="staticRangeText">5810 м</div>
+            <span class="static-range-sub" id="staticRangeSub">ФИКСИРОВАННАЯ ДАЛЬНОСТЬ</span>
+        </div>
+        <button class="btn-calc" id="calcBtn" style="display:none;" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
+        <div class="results" id="resultArea"></div>
+
+        <div class="panels-row">
+            <div class="panel-box">
+                <div class="panel-title">📐 ЗОНА РАЗБРОСА</div>
+                <div class="scatter-canvas-wrapper"><canvas id="scatterCanvas" class="scatter-canvas"></canvas></div>
+                <div class="scatter-info">Разброс: <b id="scatterDimsDisplay">100×20</b> м</div>
+                <div class="scatter-extra" id="scatterExtra">⚠️ Сложная дальность: +250 м</div>
+            </div>
+            <div class="panel-box">
+                <div class="panel-title">⏱️ ВРЕМЯ ПОДЛЁТА</div>
+                <div class="flight-time-display">
+                    <div style="color:#666;font-size:0.9rem">РАСЧЁТНОЕ ВРЕМЯ</div>
+                    <div><span class="flight-time-value" id="flightTimeValue">—</span><span class="flight-time-unit">сек</span></div>
+                    <div class="flight-time-status ft-ok" id="flightTimeStatus">ТОЧНЫЙ РАСЧЁТ</div>
+                </div>
+                <div class="flight-time-details">
+                    <div class="ft-detail"><span class="ft-label">ВЕРТОЛЁТ</span><span class="ft-value" id="ftHeliHeight">125 м</span></div>
+                    <div class="ft-detail"><span class="ft-label">ДАЛЬНОСТЬ</span><span class="ft-value" id="ftRange">6000 м</span></div>
+                    <div class="ft-detail"><span class="ft-label">РЕЖИМ</span><span class="ft-value" id="ftMode">Контактный</span></div>
+                    <div class="ft-detail"><span class="ft-label">МЕТОД</span><span class="ft-value" id="ftMethod">Интерполяция</span></div>
+                </div>
+                <div class="flight-time-formula"><span class="formula-title">📐 Формула:</span><span id="formulaText">t = t₁ + (H−H₁) × (t₂−t₁)/(H₂−H₁)</span></div>
+            </div>
+        </div>
+
+        <!-- АНИМАЦИЯ ПОДРЫВА -->
+        <div class="panel-box" style="margin-top:20px;">
+            <div class="panel-title">💥 АНИМАЦИЯ ПОДРЫВА</div>
+            <div class="anim-controls">
+                <button class="anim-btn replay-btn" onclick="replayBurstAnim()">↺ ПОВТОР</button>
+            </div>
+            <div class="burst-canvas-wrapper">
+                <canvas id="burstCanvas" class="burst-canvas"></canvas>
+            </div>
+            <div class="anim-status" id="animStatus"></div>
+            <div class="anim-legend">
+                <div class="anim-leg"><div class="anim-leg-dot" style="background:#c0534a"></div>Укрытие</div>
+                <div class="anim-leg"><div class="anim-leg-dot" style="background:#5aaa6a"></div>Контакт — укрытие защищает</div>
+                <div class="anim-leg"><div class="anim-leg-dot" style="background:#e09050"></div>Воздух — поражает сверху и сзади</div>
+            </div>
+        </div>
+
+        <div class="info-block" id="infoBlock">📐 <b>Логика:</b> Высота вертолета = Цель + ΔH<br>✅ Выбор высоты воздушного подрыва • Анимация с укрытием</div>
+
+        <!-- ✅ ПАНЕЛЬ КООРДИНАТНОГО РАСЧЕТА -->
+        <div class="coord-panel">
+            <div class="coord-panel-title">📍 РАСЧЕТ ДАЛЬНОСТИ ПО КООРДИНАТАМ</div>
+            <div class="coord-inputs">
+                <div class="coord-group">
+                    <span class="coord-label">ВЕРТОЛЁТ (6-значные)</span>
+                    <input type="text" id="heliCoord" class="coord-input" placeholder="123456" maxlength="6" pattern="\d{6}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
+                </div>
+                <div class="coord-group">
+                    <span class="coord-label">ЦЕЛЬ (6-значные)</span>
+                    <input type="text" id="targetCoord" class="coord-input" placeholder="123456" maxlength="6" pattern="\d{6}" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
+                </div>
+            </div>
+            <button class="coord-calc-btn" onclick="calculateCoordDistance()">📏 ВЫЧИСЛИТЬ ДАЛЬНОСТЬ</button>
+            <div class="coord-result" id="coordResult" style="display:none;">
+                <div><span class="coord-result-value" id="coordDistance">0.00</span><span class="coord-result-unit">км</span></div>
+                <div class="coord-result-detail" id="coordDetail">ΔX: 0 м | ΔY: 0 м</div>
+            </div>
+            <div class="coord-hint">
+                Формат: <b>ABCDEF</b> → X=AB.C км, Y=DE.F км • Пример: 100095 и 117095 = 1.7 км
+            </div>
+        </div>
+
+        <div class="footer" id="footer">
+            ВЕР.29.3 // ФИНАЛЬНАЯ ВЕРСИЯ // АНИМАЦИЯ Зациклена
+            <div class="footer-credits">produced by <span>[UNS] FRESHGONS</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="service-menu-overlay" id="serviceMenu">
+    <div class="service-menu">
+        <div class="service-menu-header">
+            <div class="service-menu-title">⚙️ СЕРВИСНОЕ МЕНЮ — ДАННЫЕ</div>
+            <button class="service-menu-close" onclick="toggleServiceMenu()">✕ ЗАКРЫТЬ</button>
+        </div>
+        <div class="service-menu-content">
+            <div class="angle-tabs">
+                <button class="angle-tab angle-0 active" onclick="setActiveAngleTab('hydra_contact')">0° — HYDRA</button>
+                <button class="angle-tab angle-hydra-air" onclick="setActiveAngleTab('hydra_air')">☁️ HYDRA 10-50м</button>
+                <button class="angle-tab angle-c8-contact" onclick="setActiveAngleTab('c8_contact')">C8 Контакт</button>
+                <button class="angle-tab angle-c8-air" onclick="setActiveAngleTab('c8_air')">C8 Воздух</button>
+                <button class="angle-tab angle-s5-contact" onclick="setActiveAngleTab('s5_contact')">С-5 Контакт</button>
+                <button class="angle-tab angle-s5-air" onclick="setActiveAngleTab('s5_air')">С-5 Воздух</button>
+                <button class="angle-tab angle-s13-contact" onclick="setActiveAngleTab('s13_contact')">С-13 Контакт</button>
+                <button class="angle-tab angle-s13-air" onclick="setActiveAngleTab('s13_air')">С-13 Воздух</button>
+            </div>
+            <div id="angleTableContainer"></div>
+            <div class="service-buttons">
+                <button class="save-btn" onclick="saveBallisticData()">💾 СОХРАНИТЬ</button>
+                <button class="copy-btn" onclick="copyTableData()">📋 СКОПИРОВАТЬ</button>
+            </div>
+            <div class="copy-success" id="copySuccess">✅ Данные скопированы!</div>
+            <div class="table-note">📝 Редактируйте дальность, время и разброс. Пустые ячейки = интерполяция. Все значения изменяемы.</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===== ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =====
+let currentAmmo = 'hydra';
+let isAirburst = false;
+let c8AirburstHeight = 25; // 0-50м для С-8/С-5/С-13 (непрерывное значение)
+
+const C8_AIRBURST_HEIGHT_OFFSET = -10;
+const HYDRA_MAX_RANGE_ANGLE_10 = 10800;
+const HYDRA_MIN_RANGE_ANGLE_10 = 10800;
+const HYDRA_MAX_ABS_HEIGHT_ANGLE_10 = 500;
+const HYDRA_SCATTER_LENGTH = { 0: 100, 5: 50, 10: 25 };
+const HYDRA_SCATTER_WIDTH = 20;
+const HYDRA_SCATTER_COLORS = { 0: '#a29bfe', 5: '#45a29e', 10: '#d4af37' };
+const HYDRA_MIN_RANGE = { 0: 3500, 5: 9400, 10: 10800 };
+
+// ✅ ПАРАМЕТРЫ ВОЗДУШНОГО ПОДРЫВА HYDRA
+const HYDRA_AIRBURST_RANGE = 12250;
+const HYDRA_AIRBURST_HEIGHT = 2430;
+const HYDRA_AIRBURST_TIME = 35;
+
+// ✅ НОВАЯ КОНСТАНТА: Минимальная высота отработки для С-8 в воздухе (620м)
+const C8_MIN_AIRBURST_DH = 620;
+
+let hydraBallisticData = {
+    0: { 50:3600,100:4250,150:4800,300:6225,1000:9500,1300:10370,1500:10800 },
+    5: { 50:9400,100:9750,300:10500,500:10900,800:11200,1000:11500 },
+    10: { 50:9000,100:9350,150:9650,200:9900,250:10100,300:10300,350:10450,400:10600,450:10700,500:10800 }
+};
+let hydraFlightTimeData = {
+    0: { 50:6.48,100:8.19,150:9.4,300:12,1000:25,1300:36.99,1500:42 },
+    5: { 50:32,100:34,300:26,500:28,800:30,1000:32 },
+    10: { 50:48,100:50,150:52,200:54,250:55.5,300:57,350:58.5,400:60,450:61,500:62 }
+};
+
+let hydraAirburstData = { 2430: { range: 12250, scatter: 20 } };
+let hydraAirburstTime = { 2430: 35 };
+
+const C8_MIN_DELTA_H = 30;
+const C8_MAX_DELTA_H_CONTACT = 600;
+const C8_MIN_RANGE = 1350;
+const C8_CONTACT_MAX_RANGE = 5750;
+const C8_AIRBURST_FIXED_RANGE = 5810;
+const C8_SCATTER_COLORS = { contact:'#ff6b6b', airburst_10_20:'#ff8c69', airburst_30_40:'#ffb347' };
+const C8_CONTACT_OVERFLIGHT = 400;
+
+// ✅ ОБНОВЛЕННЫЕ ЯКОРНЫЕ ЗНАЧЕНИЯ ДЛЯ С-8 ВОЗДУШНЫЙ ПОДРЫВ
+// Минимум ΔH 620м (соответствует реальному подрыву 0м)
+let c8BallisticData = {
+    contact: {
+        30:{range:1350,scatter:150},50:{range:1800,scatter:150},150:{range:3000,scatter:150},
+        250:{range:3900,scatter:120},350:{range:4200,scatter:100},450:{range:4850,scatter:100},
+        500:{range:5100,scatter:100},550:{range:5300,scatter:95},575:{range:5450,scatter:92},600:{range:5700,scatter:90}
+    },
+    airburst_10_20: { 
+        620:{range:5810,scatter:20}, 
+        640:{range:5810,scatter:20}, 
+        670:{range:5810,scatter:20}
+    },
+    airburst_30_40: { 
+        620:{range:5810,scatter:20},
+        640:{range:5810,scatter:20},
+        670:{range:5810,scatter:20}
+    }
+};
+let c8FlightTimeData = {
+    contact: { 30:3.2,50:4.1,150:7.8,250:11.2,350:14.5,450:17.8,500:19.5,550:21.2,575:22,600:22.8 },
+    airburst_10_20: { 620: 13.0, 640: 13.0, 670: 13.0 },
+    airburst_30_40: { 620: 13.0, 640: 13.0, 670: 13.0 }
+};
+
+// ✅ С-5 и С-13: Полная копия данных от С-8
+let s5BallisticData = JSON.parse(JSON.stringify(c8BallisticData));
+let s5FlightTimeData = JSON.parse(JSON.stringify(c8FlightTimeData));
+let s13BallisticData = JSON.parse(JSON.stringify(c8BallisticData));
+let s13FlightTimeData = JSON.parse(JSON.stringify(c8FlightTimeData));
+
+// Бэкапы
+let hydraBallisticDataBackup = JSON.parse(JSON.stringify(hydraBallisticData));
+let hydraFlightTimeDataBackup = JSON.parse(JSON.stringify(hydraFlightTimeData));
+let hydraAirburstDataBackup = JSON.parse(JSON.stringify(hydraAirburstData));
+let hydraAirburstTimeBackup = JSON.parse(JSON.stringify(hydraAirburstTime));
+let c8BallisticDataBackup = JSON.parse(JSON.stringify(c8BallisticData));
+let c8FlightTimeDataBackup = JSON.parse(JSON.stringify(c8FlightTimeData));
+let s5BallisticDataBackup = JSON.parse(JSON.stringify(s5BallisticData));
+let s5FlightTimeDataBackup = JSON.parse(JSON.stringify(s5FlightTimeData));
+let s13BallisticDataBackup = JSON.parse(JSON.stringify(s13BallisticData));
+let s13FlightTimeDataBackup = JSON.parse(JSON.stringify(s13FlightTimeData));
+
+let currentTargetAlt = 125.0;
+let currentResults = {};
+let activeServiceAngle = 'hydra_contact';
+
+const targetHeightInput = document.getElementById('targetHeightInput');
+const targetHeightWrapper = document.getElementById('targetHeightWrapper');
+const rangeSlider = document.getElementById('rangeSlider');
+const rangeDisplay = document.getElementById('rangeValueDisplay');
+const resultArea = document.getElementById('resultArea');
+const calcBtn = document.getElementById('calcBtn');
+const infoBlock = document.getElementById('infoBlock');
+const footer = document.getElementById('footer');
+const minRangeLabel = document.getElementById('minRangeLabel');
+const maxRangeLabel = document.getElementById('maxRangeLabel');
+const rangeWrapper = document.getElementById('rangeWrapper');
+const staticRangeDisplay = document.getElementById('staticRangeDisplay');
+const staticRangeText = document.getElementById('staticRangeText');
+const staticRangeSub = document.getElementById('staticRangeSub');
+const burstToggle = document.getElementById('burstToggle');
+const animStatus = document.getElementById('animStatus');
+
+// Элементы панели высоты
+const c8BurstPanelWrapper = document.getElementById('c8BurstPanelWrapper');
+const c8BurstPanel = document.getElementById('c8BurstPanel');
+const panelMissile = document.getElementById('panelMissile');
+const panelHeightLabel = document.getElementById('panelHeightLabel');
+const panelHeightVal = document.getElementById('panelHeightVal');
+
+targetHeightInput.addEventListener('input', function() {
+    let val = parseFloat(this.value);
+    if (isNaN(val) || val < 0) val = 0;
+    currentTargetAlt = val;
+    calculateOptimal();
+    replayBurstAnim();
+});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты цели
+targetHeightWrapper.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    let newVal = parseInt(targetHeightInput.value) + delta;
+    newVal = Math.max(0, Math.min(9000, newVal));
+    targetHeightInput.value = newVal;
+    currentTargetAlt = newVal;
+    calculateOptimal();
+    replayBurstAnim();
+}, { passive: false });
+
+// Подсветка панели при наведении
+targetHeightWrapper.addEventListener('mouseenter', () => {
+    targetHeightWrapper.classList.add('panel-active');
+});
+targetHeightWrapper.addEventListener('mouseleave', () => {
+    targetHeightWrapper.classList.remove('panel-active');
+});
+
+// ✅ УПРАВЛЕНИЕ МЕНЮ
+function toggleAmmoMenu() {
+    const dropdown = document.getElementById('ammoDropdown');
+    const trigger = document.querySelector('.ammo-trigger-btn');
+    dropdown.classList.toggle('open');
+    trigger.classList.toggle('open');
+}
+
+function updateC8HeightPanel() {
+    const panelH = c8BurstPanel.clientHeight;
+    const pct = c8AirburstHeight / 50;
+    const minBottom = 32;
+    const maxBottom = panelH - 50;
+    const bottom = minBottom + pct * (maxBottom - minBottom);
+    
+    panelMissile.style.bottom = bottom + 'px';
+    panelHeightLabel.style.bottom = (bottom + 20) + 'px';
+    panelHeightLabel.textContent = c8AirburstHeight + ' м';
+    panelHeightVal.textContent = c8AirburstHeight + ' м';
+}
+
+function setC8AirburstHeight(h) {
+    c8AirburstHeight = Math.max(0, Math.min(50, Math.round(h)));
+    updateC8HeightPanel();
+    calculateOptimal();
+    replayBurstAnim();
+}
+
+// Обработка панели (клик и перетаскивание)
+let isDraggingPanel = false;
+function handlePanelInput(clientY) {
+    const rect = c8BurstPanel.getBoundingClientRect();
+    const relY = clientY - rect.top;
+    const panelH = rect.height;
+    const minBottom = 32;
+    const maxBottom = panelH - 50;
+    let pct = 1 - (relY / panelH);
+    pct = Math.max(0, Math.min(1, (pct * panelH - minBottom) / (maxBottom - minBottom)));
+    setC8AirburstHeight(Math.round(pct * 50));
+}
+
+c8BurstPanel.addEventListener('mousedown', (e) => { isDraggingPanel = true; handlePanelInput(e.clientY); });
+c8BurstPanel.addEventListener('touchstart', (e) => { isDraggingPanel = true; handlePanelInput(e.touches[0].clientY); e.preventDefault(); }, {passive: false});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для панели высоты подрыва
+c8BurstPanelWrapper.addEventListener('wheel', (e) => {
+    if (!isAirburst || !['c8','s5','s13'].includes(currentAmmo)) return;
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? -1 : 1;
+    setC8AirburstHeight(c8AirburstHeight + delta);
+}, { passive: false });
+
+window.addEventListener('mousemove', (e) => { if(isDraggingPanel) handlePanelInput(e.clientY); });
+window.addEventListener('touchmove', (e) => { if(isDraggingPanel) handlePanelInput(e.touches[0].clientY); });
+window.addEventListener('mouseup', () => { isDraggingPanel = false; });
+window.addEventListener('touchend', () => { isDraggingPanel = false; });
+
+function setAmmoType(type) {
+    currentAmmo = type;
+    const label = document.getElementById('currentAmmoLabel');
+    const options = document.querySelectorAll('.ammo-option');
+    options.forEach(opt => opt.classList.remove('active'));
+    const activeOpt = document.querySelector(`.ammo-option[data-type="${type}"]`);
+    if(activeOpt) {
+        activeOpt.classList.add('active');
+        label.textContent = activeOpt.textContent;
+    }
+    document.getElementById('ammoDropdown').classList.remove('open');
+    document.querySelector('.ammo-trigger-btn').classList.remove('open');
+
+    let isRpgLike = ['c8','s5','s13'].includes(type);
+    if (isRpgLike) {
+        calcBtn.className = `btn-calc ${type}`;
+        let name = type === 'c8' ? 'C8' : type.toUpperCase();
+        infoBlock.innerHTML = `📐 <b>${name}: 0° только</b> • ΔH: ${C8_MIN_DELTA_H}-${C8_MAX_DELTA_H_CONTACT}м (контакт), 0-50м (воздушный)<br>✅ Интерактивный выбор высоты подрыва • 🔄 +400м перелёт (контакт)`;
+        footer.innerHTML = `ВЕР.29.3 // ${name}: ВЫБОР ВЫСОТЫ ПОДРЫВА<div class="footer-credits">produced by <span>[UNS] FRESHGONS</span></div>`;
+        if (!isAirburst) {
+            rangeSlider.min = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+            rangeSlider.max = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            minRangeLabel.textContent = `МИН: ${((C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            maxRangeLabel.textContent = `МАКС: ${((C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+        }
+    } else {
+        calcBtn.className = 'btn-calc';
+        infoBlock.innerHTML = `📐 <b>Логика:</b> Высота вертолета = Цель + ΔH<br>✅ Hydra: Воздушный подрыв — ΔH 2430м, дальность 12250м, подрыв +10-50м над целью`;
+        footer.innerHTML = 'ВЕР.29.3 // HYDRA: ВОЗДУШНЫЙ ПОДРЫВ 2430м/12250м<div class="footer-credits">produced by <span>[UNS] FRESHGONS</span></div>';
+        if (!isAirburst) {
+            rangeSlider.min = 3500;
+            rangeSlider.max = 11500;
+            minRangeLabel.textContent = 'МИН: 3.5 км';
+            maxRangeLabel.textContent = 'МАКС: 11.5 км';
+        }
+    }
+    
+    if (isAirburst && isRpgLike) {
+        c8BurstPanelWrapper.classList.add('active');
+    } else {
+        c8BurstPanelWrapper.classList.remove('active');
+    }
+    
+    // ✅ Обновляем интерфейс в зависимости от режима подрыва и типа ракет
+    if (isRpgLike) {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+            rangeSlider.max = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            minRangeLabel.textContent = `МИН: ${((C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            maxRangeLabel.textContent = `МАКС: ${((C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            let cur = parseInt(rangeSlider.value);
+            if (cur < rangeSlider.min) rangeSlider.value = rangeSlider.min;
+            if (cur > rangeSlider.max) rangeSlider.value = rangeSlider.max;
+        }
+    } else {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = 3500;
+            rangeSlider.max = 11500;
+            minRangeLabel.textContent = 'МИН: 3.5 км';
+            maxRangeLabel.textContent = 'МАКС: 11.5 км';
+        }
+    }
+    
+    let curVal = parseInt(rangeSlider.value);
+    if(curVal < parseInt(rangeSlider.min)) rangeSlider.value = rangeSlider.min;
+    if(curVal > parseInt(rangeSlider.max)) rangeSlider.value = rangeSlider.max;
+    rangeDisplay.textContent = rangeSlider.value + ' м';
+    calculateOptimal();
+    replayBurstAnim();
+}
+
+document.addEventListener('click', function(e) {
+    const wrapper = document.querySelector('.ammo-selector-wrapper');
+    if (!wrapper.contains(e.target)) {
+        document.getElementById('ammoDropdown').classList.remove('open');
+        document.querySelector('.ammo-trigger-btn').classList.remove('open');
+    }
+});
+
+function toggleBurstMode() {
+    isAirburst = !isAirburst;
+    if (isAirburst) {
+        burstToggle.classList.add('airburst');
+        burstToggle.innerHTML = '☁️ ВОЗДУШНЫЙ ПОДРЫВ';
+    } else {
+        burstToggle.classList.remove('airburst');
+        burstToggle.innerHTML = '🎯 КОНТАКТНЫЙ ПОДРЫВ';
+    }
+
+    let isRpgLike = ['c8','s5','s13'].includes(currentAmmo);
+    if (isAirburst && isRpgLike) {
+        c8BurstPanelWrapper.classList.add('active');
+    } else {
+        c8BurstPanelWrapper.classList.remove('active');
+    }
+
+    if (isRpgLike) {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${C8_AIRBURST_FIXED_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+            rangeSlider.max = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            minRangeLabel.textContent = `МИН: ${((C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            maxRangeLabel.textContent = `МАКС: ${((C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT)/1000).toFixed(2)} км`;
+            let cur = parseInt(rangeSlider.value);
+            if (cur < rangeSlider.min) rangeSlider.value = rangeSlider.min;
+            if (cur > rangeSlider.max) rangeSlider.value = rangeSlider.max;
+        }
+    } else {
+        if (isAirburst) {
+            rangeWrapper.classList.add('collapsed');
+            staticRangeDisplay.classList.add('visible');
+            staticRangeText.textContent = `${HYDRA_AIRBURST_RANGE} м`;
+            staticRangeText.style.color = 'var(--air-color)';
+            staticRangeSub.textContent = 'ФИКСИРОВАННАЯ ДАЛЬНОСТЬ (HYDRA)';
+        } else {
+            rangeWrapper.classList.remove('collapsed');
+            staticRangeDisplay.classList.remove('visible');
+            rangeSlider.min = 3500;
+            rangeSlider.max = 11500;
+            minRangeLabel.textContent = 'МИН: 3.5 км';
+            maxRangeLabel.textContent = 'МАКС: 11.5 км';
+        }
+    }
+    rangeDisplay.textContent = rangeSlider.value + ' м';
+    calculateOptimal();
+    replayBurstAnim();
+}
+
+rangeSlider.addEventListener('input', function() {
+    const v = parseInt(this.value);
+    rangeDisplay.textContent = v + ' м';
+    if (currentAmmo === 'hydra' && !isAirburst && v > 10800) {
+        rangeDisplay.classList.add('range-warning'); updateScatterExtra(true);
+    } else {
+        rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
+    }
+    calculateOptimal();
+    updateFlightTimePanel();
+    replayBurstAnim();
+});
+
+// ✅ ДОБАВЛЕНО: Управление колесиком мыши для ползунка дальности
+rangeWrapper.addEventListener('wheel', (e) => {
+    if (!rangeWrapper.classList.contains('collapsed')) {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -100 : 100;
+        let newVal = parseInt(rangeSlider.value) + delta;
+        newVal = Math.max(parseInt(rangeSlider.min), Math.min(parseInt(rangeSlider.max), newVal));
+        rangeSlider.value = newVal;
+        rangeDisplay.textContent = newVal + ' м';
+        if (currentAmmo === 'hydra' && !isAirburst && newVal > 10800) {
+            rangeDisplay.classList.add('range-warning'); updateScatterExtra(true);
+        } else {
+            rangeDisplay.classList.remove('range-warning'); updateScatterExtra(false);
+        }
+        calculateOptimal();
+        updateFlightTimePanel();
+        replayBurstAnim();
+    }
+}, { passive: false });
+function updateScatterExtra(isLongRange) {
+    document.getElementById('scatterExtra').style.display = (isLongRange && currentAmmo==='hydra' && !isAirburst) ? 'block' : 'none';
+}
+
+// ===== ✅ РАСЧЕТ ДАЛЬНОСТИ ПО КООРДИНАТАМ =====
+function parseGridCoordinate(coordStr) {
+    const s = coordStr.padStart(6, '0');
+    const x = (parseInt(s[0]) * 10000) + (parseInt(s[1]) * 1000) + (parseInt(s[2]) * 100);
+    const y = (parseInt(s[3]) * 10000) + (parseInt(s[4]) * 1000) + (parseInt(s[5]) * 100);
+    return { x, y };
+}
+function calculateCoordDistance() {
+    const heliStr = document.getElementById('heliCoord').value;
+    const targetStr = document.getElementById('targetCoord').value;
+    if (heliStr.length !== 6 || targetStr.length !== 6) {
+        alert('⚠️ Введите полные 6-значные координаты для обеих точек');
+        return;
+    }
+    const heli = parseGridCoordinate(heliStr);
+    const target = parseGridCoordinate(targetStr);
+    const dx = target.x - heli.x;
+    const dy = target.y - heli.y;
+    const distanceM = Math.sqrt(dx*dx + dy*dy);
+    const distanceKm = distanceM / 1000;
+    
+    const resultDiv = document.getElementById('coordResult');
+    document.getElementById('coordDistance').textContent = distanceKm.toFixed(2);
+    document.getElementById('coordDetail').textContent = `ΔX: ${Math.abs(dx)} м | ΔY: ${Math.abs(dy)} м`;
+    resultDiv.style.display = 'block';
+    resultDiv.style.opacity = '0';
+    setTimeout(() => { resultDiv.style.opacity = '1'; }, 10);
+}
+
+// ===== БАЛЛИСТИКА =====
+function getHeights(data) { return Object.keys(data).map(Number).sort((x,y)=>x-y); }
+function linearInterpolate(data, h) {
+    const keys = getHeights(data);
+    if (!keys.length) return null;
+    if (h <= keys[0]) return data[keys[0]];
+    if (h >= keys[keys.length-1]) return data[keys[keys.length-1]];
+    for (let i = 0; i < keys.length-1; i++) {
+        if (h >= keys[i] && h <= keys[i+1]) {
+            const t = (h-keys[i])/(keys[i+1]-keys[i]);
+            return data[keys[i]] + t*(data[keys[i+1]]-data[keys[i]]);
+        }
+    }
+    return null;
+}
+function getRpgDataByDeltaH(deltaH, mode, ammo) {
+    const data = (ammo === 'c8' ? c8BallisticData : ammo === 's5' ? s5BallisticData : s13BallisticData)[mode];
+    if (!data) return null;
+    const keys = getHeights(data);
+    if (data[deltaH]) return {...data[deltaH], exact:true};
+    for (let i=0; i<keys.length-1; i++) {
+        if (deltaH>=keys[i] && deltaH<=keys[i+1]) {
+            const t=(deltaH-keys[i])/(keys[i+1]-keys[i]);
+            const d1=data[keys[i]],d2=data[keys[i+1]];
+            return {range:Math.round(d1.range+t*(d2.range-d1.range)),scatter:Math.round(d1.scatter+t*(d2.scatter-d1.scatter)),exact:false};
+        }
+    }
+    return null;
+}
+function getRangeForAngle(angle, deltaH) {
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        if (isAirburst) return {range:C8_AIRBURST_FIXED_RANGE,reason:null,scatter:20};
+        if (deltaH<C8_MIN_DELTA_H||deltaH>C8_MAX_DELTA_H_CONTACT) return {range:null,reason:'deltaH_limit',scatter:null};
+        const data=getRpgDataByDeltaH(deltaH,'contact', currentAmmo);
+        if (data) {
+            return {range:data.range + C8_CONTACT_OVERFLIGHT, reason:null, scatter:data.scatter};
+        }
+        return {range:null,reason:'no_data',scatter:null};
+    }
+    if (isAirburst) return {range:HYDRA_AIRBURST_RANGE,reason:'airburst',scatter:20};
+    if (angle===10) {
+        const absH=currentTargetAlt+deltaH;
+        if (absH<50||absH>HYDRA_MAX_ABS_HEIGHT_ANGLE_10) return {range:null,reason:'height_limit',scatter:null};
+        const r=linearInterpolate(hydraBallisticData[10],deltaH);
+        return {range:Math.round(r),reason:null,scatter:HYDRA_SCATTER_LENGTH[10]};
+    }
+    const quad=linearInterpolate(hydraBallisticData[angle],deltaH);
+    if (quad!==null) return {range:Math.round(quad),reason:null,scatter:HYDRA_SCATTER_LENGTH[angle]};
+    const pts=getHeights(hydraBallisticData[angle]).map(H=>({x:H,y:hydraBallisticData[angle][H]}));
+    const isBelow=deltaH<pts[0].x;
+    const base=isBelow?pts[0]:pts[pts.length-1];
+    const neighbor=isBelow?pts[1]:pts[pts.length-2];
+    const slope=(neighbor.y-base.y)/(neighbor.x-base.x);
+    const ext=base.y+slope*(deltaH-base.x)*Math.exp(-0.002*Math.abs(deltaH-base.x));
+    return {range:Math.round(ext),reason:null,scatter:HYDRA_SCATTER_LENGTH[angle]};
+}
+
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ findBestDeltaH с новой логикой подрыва и ограничением минимума 620м
+function findBestDeltaH(angle, targetR) {
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        if (isAirburst) {
+            // ✅ НОВАЯ ЛОГИКА: Введенная высота → Реальная высота → ΔH
+            
+            // Шаг 1: Рассчитываем реальную высоту подрыва (ввод - 10, но не меньше 0)
+            const realBurstHeight = Math.max(0, c8AirburstHeight - 10);
+            
+            // Шаг 2: Рассчитываем ΔH по кусочно-линейной формуле
+            let dh;
+            if (realBurstHeight <= 10) {
+                // От 0 до 10м реального подрыва: коэффициент 2м ΔH на 1м подрыва
+                dh = 620 + realBurstHeight * 2;
+            } else {
+                // От 10 до 20м реального подрыва: коэффициент 3м ΔH на 1м подрыва
+                dh = 640 + (realBurstHeight - 10) * 3;
+            }
+            
+            // ✅ ЖЕСТКОЕ ОГРАНИЧЕНИЕ: Минимум 620м
+            const finalDH = Math.max(dh, C8_MIN_AIRBURST_DH);
+            
+            return {dH: Math.round(finalDH), range:C8_AIRBURST_FIXED_RANGE, error:0, scatter:20, reason:'airburst'};
+        }
+        const data=(currentAmmo==='c8'?c8BallisticData:currentAmmo==='s5'?s5BallisticData:s13BallisticData).contact;
+        if (!data) return {dH:0,range:null,error:Infinity,scatter:null,reason:'no_mode'};
+        const keys=getHeights(data);
+        let best={dH:C8_MIN_DELTA_H,range:null,error:Infinity,scatter:null,reason:null};
+        for (const dh of keys) {
+            const d=data[dh];
+            const actualRange = d.range + C8_CONTACT_OVERFLIGHT;
+            const maxEff = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+            if (actualRange > maxEff) continue;
+            const diff=Math.abs(actualRange - targetR);
+            if (diff<best.error) best={dH:dh,range:actualRange,error:Math.round(diff),scatter:d.scatter,reason:'anchor'};
+        }
+        if (best.error>10) {
+            for (let dh=C8_MIN_DELTA_H; dh<=C8_MAX_DELTA_H_CONTACT; dh+=1) {
+                const d=getRpgDataByDeltaH(dh,'contact', currentAmmo);
+                if (d) {
+                    const actualRange = d.range + C8_CONTACT_OVERFLIGHT;
+                    const maxEff = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+                    if (actualRange <= maxEff) {
+                        const diff=Math.abs(actualRange - targetR);
+                        if (diff<best.error) { 
+                            best={dH:dh,range:actualRange,error:Math.round(diff),scatter:d.scatter,reason:'interp'}; 
+                            if (diff<10) break; 
+                        }
+                    }
+                }
+            }
+        }
+        return best;
+    }
+    if (currentAmmo==='hydra' && isAirburst) {
+        const dH = HYDRA_AIRBURST_HEIGHT;
+        const d = hydraAirburstData[dH];
+        return {dH, range: d.range, error: 0, scatter: d.scatter, reason: 'airburst'};
+    }
+    if (angle===10) {
+        if (targetR!==HYDRA_MAX_RANGE_ANGLE_10) return {dH:0,range:null,error:Infinity,reason:'range_mismatch'};
+        for (let dH=0; dH<=500; dH+=1) {
+            const res=getRangeForAngle(10,dH);
+            if (res.range===HYDRA_MAX_RANGE_ANGLE_10) return {dH,range:HYDRA_MAX_RANGE_ANGLE_10,error:0,reason:null};
+        }
+        return {dH:500,range:HYDRA_MAX_RANGE_ANGLE_10,error:0,reason:null};
+    }
+    const hList=getHeights(hydraBallisticData[angle]);
+    let best={dH:50,range:0,error:Infinity,extrapolated:false,reason:null};
+    const step=angle===0?1:5;
+    for (let dH=-100; dH<=2000; dH+=step) {
+        const res=getRangeForAngle(angle,dH);
+        if (res.reason) continue;
+        const diff=Math.abs(res.range-targetR);
+        if (diff<best.error) {
+            best={dH:Math.round(dH),range:res.range,error:Math.round(diff),extrapolated:(dH<hList[0]||dH>hList[hList.length-1]),reason:null};
+            if (angle===0&&diff<5) break;
+        }
+    }
+    return best;
+}
+function checkTrajectoryPossibility(angle, range) {
+    if (isAirburst) return {possible:true,reason:null,suggestion:null};
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        const effMin = C8_MIN_RANGE + C8_CONTACT_OVERFLIGHT;
+        const effMax = C8_CONTACT_MAX_RANGE + C8_CONTACT_OVERFLIGHT;
+        if (range<effMin) return {possible:false,reason:'too_short',suggestion:`Мин. дальность (с перелётом): ${effMin} м`};
+        if (range>effMax) return {possible:false,reason:'too_long',suggestion:`Макс. дальность (с перелётом): ${effMax} м`};
+        return {possible:true,reason:null,suggestion:null};
+    }
+    if (angle===0) return {possible:true,reason:null,suggestion:null};
+    if (angle===10) {
+        if (range!==HYDRA_MAX_RANGE_ANGLE_10) return {possible:false,reason:'range_fixed',suggestion:`Угол 10° работает только на ${HYDRA_MAX_RANGE_ANGLE_10} м`};
+        return {possible:true,reason:null,suggestion:null};
+    }
+    if (range<HYDRA_MIN_RANGE[angle]) return {possible:false,reason:'too_short',suggestion:`Мин. дальность для ${angle}°: ${HYDRA_MIN_RANGE[angle]} м`};
+    return {possible:true,reason:null,suggestion:null};
+}
+
+// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ calculateFlightTime
+function calculateFlightTime(deltaH) {
+    if (isAirburst) {
+        if (['c8','s5','s13'].includes(currentAmmo)) {
+            // ✅ Время полета фиксировано = 13 сек для всех высот подрыва
+            return {time: 13.0, method:'фиксированный', h1:null, h2:null};
+        }
+        return {time: HYDRA_AIRBURST_TIME, method:'фиксированный', h1:null, h2:null};
+    }
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        const flightData = currentAmmo==='c8'?c8FlightTimeData:currentAmmo==='s5'?s5FlightTimeData:s13FlightTimeData;
+        const data=flightData.contact;
+        const heights=getHeights(data);
+        if (deltaH<=heights[0]) return {time:data[heights[0]],method:'якорь',h1:heights[0],h2:null};
+        if (deltaH>=heights[heights.length-1]) return {time:data[heights[heights.length-1]],method:'якорь',h1:heights[heights.length-1],h2:null};
+        for (let i=0; i<heights.length-1; i++) {
+            const h1=heights[i],h2=heights[i+1];
+            if (deltaH>=h1&&deltaH<=h2) {
+                const t1=data[h1],t2=data[h2];
+                const t=t1+(deltaH-h1)*(t2-t1)/(h2-h1);
+                return {time:Math.round(t*100)/100,method:'интерполяция',h1,h2,t1,t2};
+            }
+        }
+        return {time:null,method:'ошибка'};
+    }
+    const timeAnchors=hydraFlightTimeData[0];
+    const heights=Object.keys(timeAnchors).map(Number).sort((a,b)=>a-b);
+    const heliHeight=currentTargetAlt+deltaH;
+    if (heliHeight<=heights[0]) return {time:timeAnchors[heights[0]],method:'якорь',h1:heights[0],h2:null};
+    if (heliHeight>=heights[heights.length-1]) return {time:timeAnchors[heights[heights.length-1]],method:'якорь',h1:heights[heights.length-1],h2:null};
+    for (let i=0; i<heights.length-1; i++) {
+        const h1=heights[i],h2=heights[i+1];
+        if (heliHeight>=h1&&heliHeight<=h2) {
+            const t1=timeAnchors[h1],t2=timeAnchors[h2];
+            const t=t1+(heliHeight-h1)*(t2-t1)/(h2-h1);
+            return {time:Math.round(t*100)/100,method:'интерполяция',h1,h2,t1,t2};
+        }
+    }
+    return {time:null,method:'ошибка'};
+}
+
+function updateFlightTimePanel() {
+    const targetR=isAirburst?(['c8','s5','s13'].includes(currentAmmo)?C8_AIRBURST_FIXED_RANGE:HYDRA_AIRBURST_RANGE):parseInt(rangeSlider.value);
+    const result=currentResults[0]||{dH:0,range:targetR,scatter:currentAmmo==='hydra'?100:150};
+    const deltaH=result.dH??0;
+    let heightOffset=['c8','s5','s13'].includes(currentAmmo)&&isAirburst?C8_AIRBURST_HEIGHT_OFFSET:0;
+    
+    // ✅ ИСПРАВЛЕНО: Для С8/S5/S13 убраны лишние вычеты (-10, -25). Высота = Цель + ΔH.
+    let heliHeight;
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        heliHeight = Math.round(currentTargetAlt + deltaH);
+    } else {
+        heliHeight = isAirburst 
+            ? Math.round(currentTargetAlt + HYDRA_AIRBURST_HEIGHT - 10)
+            : Math.max(0, Math.round(currentTargetAlt + deltaH));
+    }
+
+    const check=checkTrajectoryPossibility(0,targetR);
+    const timeValue=document.getElementById('flightTimeValue');
+    const timeStatus=document.getElementById('flightTimeStatus');
+    document.getElementById('ftHeliHeight').textContent=heliHeight+' м';
+    document.getElementById('ftRange').textContent=targetR+' м';
+    if (isAirburst) {
+        document.getElementById('ftMode').textContent = ['c8','s5','s13'].includes(currentAmmo) 
+            ? `Воздушный ${c8AirburstHeight}м` : 'Воздушный 10-50м';
+    } else { document.getElementById('ftMode').textContent=['c8','s5','s13'].includes(currentAmmo)?'Контактный':'Hydra 0°'; }
+    if (!check.possible) {
+        timeValue.textContent='—';timeStatus.textContent='НЕДОСТУПНО';timeStatus.className='flight-time-status ft-err';
+        document.getElementById('ftMethod').textContent='—';document.getElementById('formulaText').textContent='Расчёт невозможен: '+check.suggestion;return;
+    }
+    const ft=calculateFlightTime(deltaH);
+    if (ft.method==='ошибка'||ft.time===null) {
+        timeValue.textContent='—';timeStatus.textContent='ОШИБКА';timeStatus.className='flight-time-status ft-err';
+        document.getElementById('ftMethod').textContent='—';document.getElementById('formulaText').textContent='Недостаточно данных';return;
+    }
+    timeValue.textContent=ft.time.toFixed(2);
+    if (ft.method==='фиксированный') {
+        timeStatus.textContent='ВОЗДУШНЫЙ ПОДРЫВ';timeStatus.className='flight-time-status ft-ok';
+        document.getElementById('ftMethod').textContent='Табличное';
+        document.getElementById('formulaText').textContent=`t = ${ft.time.toFixed(1)} сек (фиксированное)`;
+    } else if (ft.method==='якорь') {
+        timeStatus.textContent='ЯКОРНОЕ ЗНАЧЕНИЕ';timeStatus.className='flight-time-status ft-ok';
+        document.getElementById('ftMethod').textContent='Табличное';
+        document.getElementById('formulaText').textContent=`t = ${ft.time} сек (ΔH ${ft.h1}м)`;
+    } else {
+        timeStatus.textContent='ИНТЕРПОЛЯЦИЯ';timeStatus.className='flight-time-status ft-warn';
+        document.getElementById('ftMethod').textContent='Линейная';
+        document.getElementById('formulaText').textContent=`t = ${ft.t1} + (${deltaH}−${ft.h1}) × (${ft.t2}−${ft.t1})/(${ft.h2}−${ft.h1}) = ${ft.time} сек`;
+    }
+}
+
+// ===== РАЗБРОС =====
+function drawScatter() {
+    const canvas=document.getElementById('scatterCanvas');
+    const ctx=canvas.getContext('2d');
+    const rect=canvas.getBoundingClientRect();
+    canvas.width=rect.width;canvas.height=rect.height;
+    const centerX=canvas.width/2,centerY=canvas.height/2;
+    let scatterSize,color;
+    if (['c8','s5','s13'].includes(currentAmmo)) {
+        if (isAirburst){
+            scatterSize=20;
+            color='#4ade80';
+        }
+        else{
+            scatterSize=currentResults[0]?.scatter||150;
+            let map={c8:C8_SCATTER_COLORS, s5:{contact:'#4ade80', airburst_10_20:'#86efac', airburst_30_40:'#4ade80'}, s13:{contact:'#60a5fa', airburst_10_20:'#93c5fd', airburst_30_40:'#60a5fa'}};
+            color=map[currentAmmo][currentAmmo==='c8'?'contact':currentAmmo]?map[currentAmmo]['contact']:'#ff6b6b';
+        }
+    } else {
+        scatterSize=isAirburst?20:HYDRA_SCATTER_LENGTH[0];
+        color=isAirburst?'#4ade80':HYDRA_SCATTER_COLORS[0];
+    }
+    const width=20,scale=scatterSize<=25?4.5:1.8;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.strokeStyle='#222';ctx.lineWidth=1;
+    for (let r=25;r<=200;r+=25){ctx.beginPath();ctx.arc(centerX,centerY,r*scale*0.8,0,Math.PI*2);ctx.stroke();}
+    ctx.strokeStyle='#333';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(centerX-100*scale,centerY);ctx.lineTo(centerX+100*scale,centerY);
+    ctx.moveTo(centerX,centerY-100*scale);ctx.lineTo(centerX,centerY+100*scale);ctx.stroke();
+    ctx.strokeStyle=color;ctx.lineWidth=scatterSize<=25?3:2.5;
+    if (scatterSize<=25){ctx.beginPath();ctx.arc(centerX,centerY,scatterSize*scale,0,Math.PI*2);ctx.stroke();}
+    else{ctx.strokeRect(centerX-(scatterSize/2)*scale,centerY-(width/2)*scale,scatterSize*scale,width*scale);}
+    ctx.fillStyle=color;
+    const pointCount=scatterSize<=25?8:20,pointRadius=scatterSize<=25?5:4;
+    for (let i=0;i<pointCount;i++){
+        const x=(Math.random()-0.5)*scatterSize,y=(Math.random()-0.5)*width;
+        ctx.beginPath();ctx.arc(centerX+x*scale,centerY-y*scale,pointRadius,0,Math.PI*2);ctx.fill();
+    }
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(centerX,centerY,scatterSize<=25?8:6,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#000';ctx.lineWidth=2;ctx.stroke();
+    ctx.fillStyle='#888';ctx.font='bold 12px Courier New';ctx.textAlign='center';
+    ctx.fillText(`${scatterSize} м`,centerX,centerY+(width/2+15)*scale);
+    if (scatterSize>25) ctx.fillText(`${width} м`,centerX+(scatterSize/2+18)*scale,centerY);
+    document.getElementById('scatterDimsDisplay').textContent=scatterSize<=25?`⌀${scatterSize} м`:`${scatterSize}×${width} м`;
+}
+
+// ===== АНИМАЦИЯ ПОДРЫВА =====
+const burstCv = document.getElementById('burstCanvas');
+const burstCtx = burstCv.getContext('2d');
+let burstRaf;
+let bS = {};
+const LOOP_PAUSE_MS = 2200;
+
+function bW(){ return burstCv.width; }
+function bH(){ return burstCv.height; }
+function bGY(){ return bH() - 52; }
+function bShelter(){
+    const w=bW()*0.06, h=bH()*0.18;
+    const x=bW()*0.56, y=bGY()-h;
+    return {x,y,w,h};
+}
+
+function bInitState(){
+    burstCv.width = burstCv.offsetWidth;
+    burstCv.height = 280;
+    const isAir=isAirburst, gy=bGY(), sh=bShelter();
+    bS = {
+        t:0, phase:'fly',
+        sx:bW()*0.05, sy:gy-bH()*0.20,
+        ex:sh.x-2,
+        ey:isAir ? gy-bH()*0.30 : gy,
+        cpx:bW()*0.30, cpy:gy-bH()*0.58,
+        particles:[], flash:0, waveR:0, waveAlpha:1,
+        pauseTimer:0
+    };
+}
+
+function bBez(t,ax,ay,bx,by,ex,ey){
+    const m=1-t;
+    return{x:m*m*ax+2*m*t*bx+t*t*ex, y:m*m*ay+2*m*t*by+t*t*ey};
+}
+
+function bSpawn(){
+    const{ex,ey}=bS, sh=bShelter(), gy=bGY(), isAir=isAirburst;
+    bS.particles=[];
+    for(let i=0;i<80;i++){
+        let angle,spd;
+        if(isAir){ angle=Math.PI+Math.random()*Math.PI; spd=1.8+Math.random()*2.2; }
+        else { const left=Math.random()>0.5; angle=(left?Math.PI:0)+(Math.random()-0.5)*1.3; spd=1.5+Math.random()*2.5; }
+        bS.particles.push({x:ex,y:ey,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,life:1+Math.random()*0.3,maxLife:1+Math.random()*0.3,r:1.5+Math.random()*1.5,dead:false});
+    }
+    bS.flash=1; bS.waveR=0; bS.waveAlpha=1;
+}
+
+function bDrawBg(){
+    const g=burstCtx.createLinearGradient(0,0,0,bH());
+    g.addColorStop(0,'#0d1520'); g.addColorStop(1,'#0a1118');
+    burstCtx.fillStyle=g; burstCtx.fillRect(0,0,bW(),bH());
+    for(let i=0;i<30;i++){
+        const tx=(i*137+41)%bW(), ty=(i*97+23)%(bGY()-20);
+        burstCtx.fillStyle=`rgba(255,255,255,${0.1+((i*53)%10)*0.02})`;
+        burstCtx.beginPath();burstCtx.arc(tx,ty,0.7,0,Math.PI*2);burstCtx.fill();
+    }
+}
+function bDrawGround(){
+    const gy=bGY();
+    burstCtx.fillStyle='#192419'; burstCtx.fillRect(0,gy,bW(),bH()-gy);
+    burstCtx.strokeStyle='#2d4a2d'; burstCtx.lineWidth=1.5;
+    burstCtx.beginPath();burstCtx.moveTo(0,gy);burstCtx.lineTo(bW(),gy);burstCtx.stroke();
+    burstCtx.fillStyle='rgba(45,74,45,0.4)';
+    for(let i=0;i<6;i++){const gx=(i*bW()/5.5)%bW();burstCtx.beginPath();burstCtx.ellipse(gx,gy+8,18+i*4,5,0,0,Math.PI);burstCtx.fill();}
+}
+function bDrawFigure(fx,gy,color,label,hit){
+    const headR=6,bodyH=14;
+    if(hit){
+        burstCtx.globalAlpha=0.5; burstCtx.fillStyle='#e05050';
+        burstCtx.save();burstCtx.translate(fx,gy-headR-bodyH/2);burstCtx.rotate(0.55);
+        burstCtx.fillRect(-4,-bodyH/2,8,bodyH);burstCtx.restore();
+        burstCtx.beginPath();burstCtx.arc(fx-5,gy-headR-bodyH+2,headR,0,Math.PI*2);burstCtx.fill();
+        burstCtx.globalAlpha=1; burstCtx.fillStyle='#e05050';
+        burstCtx.font='bold 11px monospace';burstCtx.textAlign='center';burstCtx.fillText('✕',fx,gy+14);
+    } else {
+        burstCtx.globalAlpha=1; burstCtx.fillStyle=color;
+        burstCtx.beginPath();burstCtx.arc(fx,gy-headR-bodyH,headR,0,Math.PI*2);burstCtx.fill();
+        burstCtx.fillRect(fx-4,gy-bodyH,8,bodyH);
+    }
+    burstCtx.fillStyle=color; burstCtx.globalAlpha=hit?0.6:1;
+    burstCtx.font='10px monospace';burstCtx.textAlign='center';burstCtx.fillText(label,fx,gy+14);
+    burstCtx.globalAlpha=1;
+}
+function bDrawShelter(){
+    const sh=bShelter();
+    burstCtx.fillStyle='#5c2020';
+    burstCtx.beginPath();burstCtx.roundRect(sh.x,sh.y,sh.w,sh.h,3);burstCtx.fill();
+    burstCtx.strokeStyle='#c0534a';burstCtx.lineWidth=1.5;burstCtx.stroke();
+    burstCtx.fillStyle='#e07070';burstCtx.font='bold 10px monospace';burstCtx.textAlign='center';
+    burstCtx.fillText('УКРЫТИЕ',sh.x+sh.w/2,sh.y-6);
+    const brickH=6,brickW=sh.w/3;
+    burstCtx.strokeStyle='rgba(0,0,0,0.3)';burstCtx.lineWidth=0.5;
+    for(let row=0;row<Math.floor(sh.h/brickH)-1;row++){
+        const by=sh.y+row*brickH,offset=(row%2)*brickW*0.5;
+        burstCtx.beginPath();burstCtx.moveTo(sh.x,by);burstCtx.lineTo(sh.x+sh.w,by);burstCtx.stroke();
+        for(let col=0;col<4;col++){const bx=sh.x+col*brickW-offset;if(bx>sh.x&&bx<sh.x+sh.w){burstCtx.beginPath();burstCtx.moveTo(bx,by);burstCtx.lineTo(bx,by+brickH);burstCtx.stroke();}}
+    }
+}
+function bDrawTraj(){
+    const{sx,sy,ex,ey,cpx,cpy}=bS;
+    burstCtx.strokeStyle=isAirburst?'rgba(220,150,60,0.2)':'rgba(90,200,100,0.2)';
+    burstCtx.lineWidth=1.2;burstCtx.setLineDash([5,7]);
+    burstCtx.beginPath();burstCtx.moveTo(sx,sy);burstCtx.quadraticCurveTo(cpx,cpy,ex,ey);
+    burstCtx.stroke();burstCtx.setLineDash([]);
+}
+function bDrawRocket(t){
+    const{sx,sy,ex,ey,cpx,cpy}=bS;
+    const p=bBez(t,sx,sy,cpx,cpy,ex,ey);
+    const p2=bBez(Math.min(t+0.008,1),sx,sy,cpx,cpy,ex,ey);
+    const ang=Math.atan2(p2.y-p.y,p2.x-p.x);
+    burstCtx.save();burstCtx.translate(p.x,p.y);burstCtx.rotate(ang);
+    burstCtx.fillStyle=isAirburst?'#e0a050':'#6ad87a';
+    burstCtx.beginPath();burstCtx.ellipse(0,0,10,3.5,0,0,Math.PI*2);burstCtx.fill();
+    burstCtx.fillStyle='rgba(255,200,100,0.6)';
+    burstCtx.beginPath();burstCtx.ellipse(-11,0,5,2.5,0,0,Math.PI*2);burstCtx.fill();
+    burstCtx.fillStyle='#999';
+    burstCtx.beginPath();burstCtx.moveTo(-8,0);burstCtx.lineTo(-13,-3.5);burstCtx.lineTo(-13,3.5);burstCtx.closePath();burstCtx.fill();
+    burstCtx.restore();
+}
+function bDrawWave(){
+    const{ex,ey,waveR,waveAlpha,flash}=bS;
+    const sh=bShelter(),gy=bGY(),isAir=isAirburst;
+    if(flash>0){
+        const fg=burstCtx.createRadialGradient(ex,ey,0,ex,ey,40);
+        fg.addColorStop(0,`rgba(255,255,200,${flash*0.9})`);
+        fg.addColorStop(0.5,`rgba(255,180,60,${flash*0.5})`);
+        fg.addColorStop(1,'rgba(255,80,0,0)');
+        burstCtx.fillStyle=fg;burstCtx.beginPath();burstCtx.arc(ex,ey,40,0,Math.PI*2);burstCtx.fill();
+    }
+    if(waveR<=0||waveAlpha<=0) return;
+    if(!isAir){
+        burstCtx.save();
+        burstCtx.beginPath();burstCtx.rect(0,0,sh.x,gy);burstCtx.clip();
+        burstCtx.strokeStyle=`rgba(90,200,100,${waveAlpha*0.7})`;burstCtx.lineWidth=2;
+        burstCtx.beginPath();burstCtx.arc(ex,ey,waveR,0,Math.PI*2);burstCtx.stroke();
+        burstCtx.fillStyle=`rgba(90,200,100,${waveAlpha*0.04})`;burstCtx.fill();
+        if(waveR>12){burstCtx.strokeStyle=`rgba(90,200,100,${waveAlpha*0.3})`;burstCtx.lineWidth=1;burstCtx.beginPath();burstCtx.arc(ex,ey,waveR-10,0,Math.PI*2);burstCtx.stroke();}
+        burstCtx.restore();
+    } else {
+        burstCtx.save();
+        burstCtx.beginPath();
+        burstCtx.rect(0,0,bW(),gy);
+        burstCtx.rect(sh.x,sh.y,sh.w,gy-sh.y);
+        burstCtx.clip('evenodd');
+        burstCtx.strokeStyle=`rgba(220,150,60,${waveAlpha*0.7})`;burstCtx.lineWidth=2;
+        burstCtx.beginPath();burstCtx.arc(ex,ey,waveR,0,Math.PI*2);burstCtx.stroke();
+        burstCtx.fillStyle=`rgba(220,150,60,${waveAlpha*0.04})`;burstCtx.fill();
+        if(waveR>12){burstCtx.strokeStyle=`rgba(220,150,60,${waveAlpha*0.3})`;burstCtx.lineWidth=1;burstCtx.beginPath();burstCtx.arc(ex,ey,waveR-10,0,Math.PI*2);burstCtx.stroke();}
+        burstCtx.restore();
+    }
+}
+function bUpdateParticles(){
+    const sh=bShelter(),gy=bGY(),isAir=isAirburst;
+    for(const p of bS.particles){
+        if(p.dead) continue;
+        const nx=p.x+p.vx,ny=p.y+p.vy;
+        p.vy+=0.06;
+        if(ny>=gy){p.dead=true;continue;}
+        if(nx>=sh.x&&nx<=sh.x+sh.w&&ny>=sh.y&&ny<=gy){p.dead=true;continue;}
+        if(!isAir&&nx>sh.x){p.dead=true;continue;}
+        p.x=nx;p.y=ny;p.life-=0.008;
+        if(p.life<=0) p.dead=true;
+    }
+}
+function bDrawParticles(){
+    for(const p of bS.particles){
+        if(p.dead) continue;
+        const a=Math.max(0,p.life/p.maxLife);
+        burstCtx.globalAlpha=a*0.9;
+        burstCtx.fillStyle=isAirburst?'#e8b870':'#8edb9e';
+        burstCtx.beginPath();burstCtx.arc(p.x,p.y,p.r,0,Math.PI*2);burstCtx.fill();
+        burstCtx.globalAlpha=a*0.3;
+        burstCtx.beginPath();burstCtx.arc(p.x,p.y,p.r*2,0,Math.PI*2);burstCtx.fill();
+    }
+    burstCtx.globalAlpha=1;
+}
+function bDrawResultLabels(){
+    const sh=bShelter(),gy=bGY(),isAir=isAirburst;
+    const bvX=sh.x+sh.w+22,ovX=bW()*0.82;
+    burstCtx.font='bold 12px monospace';burstCtx.textAlign='center';
+    if(isAir){
+        burstCtx.fillStyle='rgba(220,80,80,0.15)';
+        burstCtx.beginPath();burstCtx.roundRect(ovX-30,gy-110,60,22,4);burstCtx.fill();
+        burstCtx.fillStyle='#e05050';burstCtx.fillText('ПОРАЖЁН',ovX,gy-95);
+        
+        burstCtx.fillStyle='rgba(220,80,80,0.15)';
+        burstCtx.beginPath();burstCtx.roundRect(bvX-30,gy-110,60,22,4);burstCtx.fill();
+        burstCtx.fillStyle='#e05050';burstCtx.fillText('ПОРАЖЁН',bvX,gy-95);
+        
+        burstCtx.fillStyle='rgba(220,150,60,0.2)';
+        burstCtx.beginPath();burstCtx.roundRect(bW()/2-100,gy-125,200,26,4);burstCtx.fill();
+        burstCtx.fillStyle='#e0a050';burstCtx.fillText('ВОЗДУШНЫЙ — ПОРАЖЕНЫ ОБА',bW()/2,gy-107);
+    } else {
+        burstCtx.fillStyle='rgba(90,170,100,0.15)';
+        burstCtx.beginPath();burstCtx.roundRect(bvX-32,gy-110,64,22,4);burstCtx.fill();
+        burstCtx.fillStyle='#5aaa6a';burstCtx.fillText('ЗАЩИЩЁН',bvX,gy-95);
+        
+        burstCtx.fillStyle='rgba(220,80,80,0.15)';
+        burstCtx.beginPath();burstCtx.roundRect(ovX-30,gy-110,60,22,4);burstCtx.fill();
+        burstCtx.fillStyle='#e05050';burstCtx.fillText('ПОРАЖЁН',ovX,gy-95);
+        
+        burstCtx.fillStyle='rgba(90,200,100,0.12)';
+        burstCtx.beginPath();burstCtx.roundRect(bW()/2-100,gy-125,200,26,4);burstCtx.fill();
+        burstCtx.fillStyle='#5aaa6a';burstCtx.fillText('КОНТАКТ — УКРЫТИЕ СПАСАЕТ',bW()/2,gy-107);
+    }
+}
+function bDrawScene(showResult, hitBehind, hitOpen){
+    bDrawBg();bDrawGround();
+    const sh=bShelter(),gy=bGY();
+    const ovX=sh.x-40,bvX=sh.x+sh.w+22;
+    bDrawFigure(ovX,gy,'#5a8aee','ОТКРЫТО',hitOpen);
+    bDrawFigure(bvX,gy,'#5aaa6a','ЗА УКРЫТИЕМ',hitBehind);
+    bDrawShelter();
+    if(showResult) bDrawResultLabels();
+}
+
+function burstFrame(){
+    if(bS.phase==='fly'){
+        bDrawScene(false,false,false);
+        bDrawTraj();bDrawRocket(bS.t);
+        bS.t+=0.007;
+        if(bS.t>=1){bS.phase='explode';bSpawn();}
+    } else if(bS.phase==='explode'){
+        bDrawScene(false,false,false);
+        bDrawTraj();bDrawWave();bDrawParticles();
+        bS.flash=Math.max(0,bS.flash-0.025);
+        bS.waveR+=2.8;
+        bS.waveAlpha=Math.max(0,bS.waveAlpha-0.008);
+        bUpdateParticles();
+        const alive=bS.particles.some(p=>!p.dead);
+        if(!alive&&bS.flash<=0&&bS.waveAlpha<=0){
+            bS.phase='result';bS.pauseTimer=Date.now();
+            const isAir=isAirburst;
+            bDrawScene(true,isAir,true);
+            animStatus.textContent=isAir
+                ?'Воздушный подрыв — волна огибает укрытие сверху, цель за ним поражена'
+                :'Контактный подрыв — укрытие полностью блокирует осколки и волну';
+            animStatus.style.color=isAir?'var(--air-color)':'var(--contact-color)';
+        }
+    } else if(bS.phase==='result'){
+        if(Date.now()-bS.pauseTimer >= LOOP_PAUSE_MS){
+            animStatus.textContent='';
+            animStatus.style.color='#555';
+            bInitState();
+            bDrawScene(false,false,false);
+        }
+    }
+    burstRaf=requestAnimationFrame(burstFrame);
+}
+
+function replayBurstAnim(){
+    cancelAnimationFrame(burstRaf);
+    animStatus.textContent='';animStatus.style.color='#555';
+    bInitState();bDrawScene(false,false,false);
+    burstRaf=requestAnimationFrame(burstFrame);
+}
+
+// ===== СЕРВИСНОЕ МЕНЮ =====
+function toggleServiceMenu(){
+    const menu=document.getElementById('serviceMenu');
+    if(menu.classList.contains('active')){
+        menu.classList.remove('active');
+        hydraBallisticData=JSON.parse(JSON.stringify(hydraBallisticDataBackup));
+        hydraFlightTimeData=JSON.parse(JSON.stringify(hydraFlightTimeDataBackup));
+        hydraAirburstData=JSON.parse(JSON.stringify(hydraAirburstDataBackup));
+        hydraAirburstTime=JSON.parse(JSON.stringify(hydraAirburstTimeBackup));
+        c8BallisticData=JSON.parse(JSON.stringify(c8BallisticDataBackup));
+        c8FlightTimeData=JSON.parse(JSON.stringify(c8FlightTimeDataBackup));
+        s5BallisticData=JSON.parse(JSON.stringify(s5BallisticDataBackup));
+        s5FlightTimeData=JSON.parse(JSON.stringify(s5FlightTimeDataBackup));
+        s13BallisticData=JSON.parse(JSON.stringify(s13BallisticDataBackup));
+        s13FlightTimeData=JSON.parse(JSON.stringify(s13FlightTimeDataBackup));
+    } else {
+        hydraBallisticDataBackup=JSON.parse(JSON.stringify(hydraBallisticData));
+        hydraFlightTimeDataBackup=JSON.parse(JSON.stringify(hydraFlightTimeData));
+        hydraAirburstDataBackup=JSON.parse(JSON.stringify(hydraAirburstData));
+        hydraAirburstTimeBackup=JSON.parse(JSON.stringify(hydraAirburstTime));
+        c8BallisticDataBackup=JSON.parse(JSON.stringify(c8BallisticData));
+        c8FlightTimeDataBackup=JSON.parse(JSON.stringify(c8FlightTimeData));
+        s5BallisticDataBackup=JSON.parse(JSON.stringify(s5BallisticData));
+        s5FlightTimeDataBackup=JSON.parse(JSON.stringify(s5FlightTimeData));
+        s13BallisticDataBackup=JSON.parse(JSON.stringify(s13BallisticData));
+        s13FlightTimeDataBackup=JSON.parse(JSON.stringify(s13FlightTimeData));
+        menu.classList.add('active');setActiveAngleTab('hydra_contact');
+    }
+}
+function setActiveAngleTab(tabId){
+    activeServiceAngle = tabId;
+    document.querySelectorAll('.angle-tab').forEach(btn => btn.classList.remove('active'));
+    let className = '.' + tabId.replace('_', '-');
+    let btn = document.querySelector(`.angle-tab${className}`);
+    if(btn) btn.classList.add('active');
+    renderAngleTable(tabId);
+}
+function renderAngleTable(tabId){
+    const container=document.getElementById('angleTableContainer');
+    let heights=[], data={}, timeData={}, ammoType='', modeName='', isAirburst=false;
+    switch(tabId){
+        case 'hydra_contact':
+            heights=[50,100,150,300,1000,1300,1500]; data=hydraBallisticData[0]; timeData=hydraFlightTimeData[0]; ammoType='hydra'; modeName='contact'; isAirburst=false; break;
+        case 'hydra_air':
+            heights=Object.keys(hydraAirburstData).map(Number); data=hydraAirburstData; timeData=hydraAirburstTime; ammoType='hydra'; modeName='air'; isAirburst=true; break;
+        case 'c8_contact':
+            heights=getHeights(c8BallisticData.contact||{}); data=c8BallisticData.contact||{}; timeData=c8FlightTimeData.contact||{}; ammoType='c8'; modeName='contact'; isAirburst=false; break;
+        case 'c8_air':
+            // ✅ НОВАЯ СИСТЕМА: Одна вкладка для воздуха С-8 с новыми якорями
+            heights=[620,640,670]; data=c8BallisticData.airburst_10_20||{}; timeData=c8FlightTimeData.airburst_10_20||{}; ammoType='c8'; modeName='airburst'; isAirburst=true; break;
+        case 's5_contact':
+            heights=getHeights(s5BallisticData.contact||{}); data=s5BallisticData.contact||{}; timeData=s5FlightTimeData.contact||{}; ammoType='s5'; modeName='contact'; isAirburst=false; break;
+        case 's5_air':
+            heights=[620,640,670]; data=s5BallisticData.airburst_10_20||{}; timeData=s5FlightTimeData.airburst_10_20||{}; ammoType='s5'; modeName='airburst'; isAirburst=true; break;
+        case 's13_contact':
+            heights=getHeights(s13BallisticData.contact||{}); data=s13BallisticData.contact||{}; timeData=s13FlightTimeData.contact||{}; ammoType='s13'; modeName='contact'; isAirburst=false; break;
+        case 's13_air':
+            heights=[620,640,670]; data=s13BallisticData.airburst_10_20||{}; timeData=s13FlightTimeData.airburst_10_20||{}; ammoType='s13'; modeName='airburst'; isAirburst=true; break;
+    }
+    let html=`<div class="data-table-container"><table class="data-table"><thead><tr><th>ΔH (м)</th><th>Дальность (м)</th><th>Время (сек)</th><th>Разброс (м)</th><th>Статус</th></tr></thead><tbody>`;
+    heights.forEach(h=>{
+        let r,t,s,isAnchor;
+        if(ammoType==='hydra' && !isAirburst){
+            r=(data[h]!==undefined)?data[h]:''; t=timeData[h]??''; s=HYDRA_SCATTER_LENGTH[0]??''; isAnchor=(data[h]!==undefined);
+        } else {
+            const d=data[h]; r=(d&&d.range!==undefined)?d.range:''; s=(d&&d.scatter!==undefined)?d.scatter:''; t=timeData[h]??''; isAnchor=(d!==undefined);
+        }
+        html+=`<tr><td><b>${h}</b></td><td><input type="number" id="r_${h}" value="${r}" min="1000" max="15000"></td><td><input type="number" id="t_${h}" value="${t}" min="1" max="100" step="0.01"></td><td><input type="number" id="s_${h}" value="${s}" min="10" max="200"></td><td>${isAnchor?'<span style="color:#34d399">● Якорь</span>':'<span style="color:#666">○ Интерп.</span>'}</td></tr>`;
+    });
+    let burstHint = '';
+    if(ammoType==='c8' && isAirburst) {
+        burstHint = `<div style="margin-top:8px;font-size:0.8rem;color:#ffa502;">💡 Подрыв: 0м→620ΔH | 10м→640ΔH | 20м→670ΔH</div>`;
+    }
+    html+=`</tbody></table></div><div style="margin-top:10px;font-size:0.85rem;color:#888;"><b>Режим:</b> ${ammoType.toUpperCase()} ${isAirburst?'• Воздушный подрыв (Общий)':'• Контактный'}${burstHint}</div>`;
+    container.innerHTML=html;
+}
+function saveBallisticData(){
+    const tabId=activeServiceAngle;
+    let heights=[], ammoType='', modeName='', isAirburst=false;
+    switch(tabId){
+        case 'hydra_contact': heights=[50,100,150,300,1000,1300,1500]; ammoType='hydra'; modeName='contact'; isAirburst=false; break;
+        case 'hydra_air': heights=[2430]; ammoType='hydra'; modeName='air'; isAirburst=true; break;
+        case 'c8_contact': heights=getHeights(c8BallisticData.contact||{}); ammoType='c8'; modeName='contact'; isAirburst=false; break;
+        case 'c8_air': 
+            heights=[620,640,670]; ammoType='c8'; modeName='airburst'; isAirburst=true; break;
+        case 's5_contact': heights=getHeights(s5BallisticData.contact||{}); ammoType='s5'; modeName='contact'; isAirburst=false; break;
+        case 's5_air':
+            heights=[620,640,670]; ammoType='s5'; modeName='airburst'; isAirburst=true; break;
+        case 's13_contact': heights=getHeights(s13BallisticData.contact||{}); ammoType='s13'; modeName='contact'; isAirburst=false; break;
+        case 's13_air':
+            heights=[620,640,670]; ammoType='s13'; modeName='airburst'; isAirburst=true; break;
+    }
+    
+    heights.forEach(h=>{
+        const ri=document.getElementById(`r_${h}`), ti=document.getElementById(`t_${h}`), si=document.getElementById(`s_${h}`);
+        
+        const saveToMode = (dataObj, timeObj, mName) => {
+            if(ammoType==='hydra' && isAirburst){
+                if(ti&&ti.value.trim()!==''){const tv=parseFloat(ti.value);if(tv>=1&&tv<=100)timeObj[h]=tv;}
+                if(ri&&ri.value.trim()!==''){const v=parseInt(ri.value);if(v>=1000&&v<=15000)dataObj[h].range=v;}
+                if(si&&si.value.trim()!==''){const v=parseInt(si.value);if(v>=10&&v<=200)dataObj[h].scatter=v;}
+            } else if(ammoType==='hydra'){
+                if(ri&&ri.value.trim()!==''){const v=parseInt(ri.value);if(v>=1000&&v<=15000)hydraBallisticData[0][h]=v;}
+                if(ti&&ti.value.trim()!==''){const tv=parseFloat(ti.value);if(tv>=1&&tv<=100)hydraFlightTimeData[0][h]=tv;}
+            } else if(['c8','s5','s13'].includes(ammoType)){
+                if(ri&&ri.value.trim()!==''){const v=parseInt(ri.value);if(v>=1000&&v<=15000){if(!dataObj[mName])dataObj[mName]={};dataObj[mName][h]=dataObj[mName][h]||{};dataObj[mName][h].range=v;}}
+                if(si&&si.value.trim()!==''){const v=parseInt(si.value);if(v>=10&&v<=200){if(!dataObj[mName])dataObj[mName]={};dataObj[mName][h]=dataObj[mName][h]||{};dataObj[mName][h].scatter=v;}}
+                if(ti&&ti.value.trim()!==''){const tv=parseFloat(ti.value);if(tv>=1&&tv<=100){if(!timeObj[mName])timeObj[mName]={};timeObj[mName][h]=tv;}}
+            }
+        };
+
+        let dataObj = ammoType==='c8'?c8BallisticData:ammoType==='s5'?s5BallisticData:s13BallisticData;
+        let timeObj = ammoType==='c8'?c8FlightTimeData:ammoType==='s5'?s5FlightTimeData:s13FlightTimeData;
+
+        if(isAirburst && (ammoType==='c8'||ammoType==='s5'||ammoType==='s13')){
+            saveToMode(dataObj, timeObj, 'airburst_10_20');
+            saveToMode(dataObj, timeObj, 'airburst_30_40');
+        } else if(ammoType==='hydra' && isAirburst){
+             if(ti&&ti.value.trim()!==''){const tv=parseFloat(ti.value);if(tv>=1&&tv<=100)hydraAirburstTime[h]=tv;}
+             if(ri&&ri.value.trim()!==''){const v=parseInt(ri.value);if(v>=1000&&v<=15000)hydraAirburstData[h].range=v;}
+             if(si&&si.value.trim()!==''){const v=parseInt(si.value);if(v>=10&&v<=200)hydraAirburstData[h].scatter=v;}
+        } else {
+            saveToMode(dataObj, timeObj, modeName);
+        }
+    });
+    
+    hydraBallisticDataBackup=JSON.parse(JSON.stringify(hydraBallisticData));
+    hydraFlightTimeDataBackup=JSON.parse(JSON.stringify(hydraFlightTimeData));
+    hydraAirburstDataBackup=JSON.parse(JSON.stringify(hydraAirburstData));
+    hydraAirburstTimeBackup=JSON.parse(JSON.stringify(hydraAirburstTime));
+    c8BallisticDataBackup=JSON.parse(JSON.stringify(c8BallisticData));
+    c8FlightTimeDataBackup=JSON.parse(JSON.stringify(c8FlightTimeData));
+    s5BallisticDataBackup=JSON.parse(JSON.stringify(s5BallisticData));
+    s5FlightTimeDataBackup=JSON.parse(JSON.stringify(s5FlightTimeData));
+    s13BallisticDataBackup=JSON.parse(JSON.stringify(s13BallisticData));
+    s13FlightTimeDataBackup=JSON.parse(JSON.stringify(s13FlightTimeData));
+    if(document.getElementById('serviceMenu').classList.contains('active')) alert('✅ Данные сохранены!');
+}
+function copyTableData(){
+    let text='', ammo='', mode='', isAirburst=false;
+    switch(activeServiceAngle){
+        case 'hydra_contact': ammo='hydra'; mode='contact'; isAirburst=false; break;
+        case 'hydra_air': ammo='hydra'; mode='air'; isAirburst=true; break;
+        case 'c8_contact': ammo='c8'; mode='contact'; isAirburst=false; break;
+        case 'c8_air': ammo='c8'; mode='air'; isAirburst=true; break;
+        case 's5_contact': ammo='s5'; mode='contact'; isAirburst=false; break;
+        case 's5_air': ammo='s5'; mode='air'; isAirburst=true; break;
+        case 's13_contact': ammo='s13'; mode='contact'; isAirburst=false; break;
+        case 's13_air': ammo='s13'; mode='air'; isAirburst=true; break;
+    }
+    let heights=[];
+    switch(activeServiceAngle){
+        case 'hydra_contact': heights=[50,100,150,300,1000,1300,1500]; break;
+        case 'hydra_air': heights=Object.keys(hydraAirburstData).map(Number); break;
+        case 'c8_contact': heights=getHeights(c8BallisticData.contact||{}); break;
+        case 'c8_air': heights=[620,640,670]; break;
+        case 's5_contact': heights=getHeights(s5BallisticData.contact||{}); break;
+        case 's5_air': heights=[620,640,670]; break;
+        case 's13_contact': heights=getHeights(s13BallisticData.contact||{}); break;
+        case 's13_air': heights=[620,640,670]; break;
+    }
+    heights.forEach(h=>{
+        let r,t,s,anchor;
+        let bData = ammo==='c8'?c8BallisticData:ammo==='s5'?s5BallisticData:ammo==='s13'?s13BallisticData:null;
+        let fData = ammo==='c8'?c8FlightTimeData:ammo==='s5'?s5FlightTimeData:ammo==='s13'?s13FlightTimeData:null;
+        let key = isAirburst ? 'airburst_10_20' : mode;
+        
+        if(['c8','s5','s13'].includes(ammo)||isAirburst){
+            const d=(bData?bData[key]:null)?.[h]; r=d?.range; t=(fData?fData[key]:null)?.[h]; s=d?.scatter; anchor=d!==undefined;
+        } else {
+            r=hydraBallisticData[0][h];t=hydraFlightTimeData[0][h];s=HYDRA_SCATTER_LENGTH[0];anchor=hydraBallisticData[0][h]!==undefined;
+        }
+        let line=`боеприпас=${ammo} `;if(isAirburst)line+=`режим=${mode} `;line+=`ΔH=${h} `;
+        line+=(r!==undefined)?`дальность=${r} `:'дальность=интерполяция ';
+        line+=(t!==undefined)?`время=${t}сек `:'время=интерполяция ';
+        line+=(s!==undefined)?`разброс=${s}м `:'разброс=интерполяция ';
+        line+=`статус=${anchor?'якорь':'интерполяция'}`;text+=line+'\n';
+    });
+    navigator.clipboard.writeText(text).then(()=>{const el=document.getElementById('copySuccess');el.classList.remove('show');void el.offsetWidth;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2000);}).catch(()=>alert('❌ Ошибка копирования'));
+}
+document.getElementById('serviceMenu').addEventListener('click',e=>{if(e.target===document.getElementById('serviceMenu'))toggleServiceMenu();});
+
+// ===== ОСНОВНОЙ РАСЧЁТ =====
+function calculateOptimal(){
+    const targetR=isAirburst?(['c8','s5','s13'].includes(currentAmmo)?C8_AIRBURST_FIXED_RANGE:HYDRA_AIRBURST_RANGE):parseInt(rangeSlider.value);
+    resultArea.innerHTML='';
+    const result=findBestDeltaH(0,targetR);
+    currentResults[0]=result;
+    const check=checkTrajectoryPossibility(0,targetR);
+    let status='',sClass='st-ok',sText='ТОЧНО',cardClass='solution-card';
+    if(['c8','s5','s13'].includes(currentAmmo)){
+        cardClass+=` ${currentAmmo}-${isAirburst?'airburst':'contact'}`;
+    }
+    if(!check.possible){cardClass+=' disabled';sClass='st-err';sText='НЕДОСТУПНО';status=`<div><span class="status-badge ${sClass}">${sText}</span><br><small style="color:#aaa">${check.suggestion}</small></div>`;}
+    else if(result.reason==='deltaH_limit'){cardClass+=' disabled';sClass='st-err';sText='ΔH ВНЕ ДИАПАЗОНА';const minDH=C8_MIN_DELTA_H,maxDH=isAirburst?800:C8_MAX_DELTA_H_CONTACT;status=`<div><span class="status-badge ${sClass}">${sText}</span><br><small style="color:#aaa">ΔH: ${minDH}-${maxDH}м</small></div>`;}
+    else if(result.error>25){sClass='st-warn';sText=`ПРИБЛ. (+${result.error}м)`;status=`<div><span class="status-badge ${sClass}">${sText}</span></div>`;}
+    else{status=`<div><span class="status-badge ${sClass}">${sText}</span></div>`;}
+    const deltaH=result.dH??0;
+    let heightOffset=['c8','s5','s13'].includes(currentAmmo)&&isAirburst?C8_AIRBURST_HEIGHT_OFFSET:0;
+    
+    // ✅ ИСПРАВЛЕНО: Для С8/S5/S13 убраны лишние вычеты. Высота вертолета = Цель + ΔH.
+    const heliAlt=(result.reason==='deltaH_limit'||!result.range)?'—':
+        (['c8','s5','s13'].includes(currentAmmo)
+            ? Math.round(currentTargetAlt + deltaH)
+            : Math.round(currentTargetAlt + deltaH + heightOffset - (isAirburst ? 10 : 0))); // Hydra airburst logic remains with offset
+            
+    const rDisp=result.range===null?'—':`${result.range} м`;
+    const scatterDisp=result.scatter!==null?`${result.scatter} м`:'—';
+    let scatterNote='';
+    if(isAirburst){
+        // ✅ ОТОБРАЖЕНИЕ РЕАЛЬНОЙ ВЫСОТЫ ПОДРЫВА (обратный расчет)
+        let realBurstH = '—';
+        if(['c8','s5','s13'].includes(currentAmmo)){
+            const realBurst = Math.max(0, c8AirburstHeight - 10);
+            scatterNote=`<div style="margin-top:8px;padding:6px;background:rgba(74,222,128,0.15);border-left:3px solid #4ade80;border-radius:4px;font-size:0.8rem;color:#4ade80;">☁️ Погрешность реальной высоты подрыва ±5 м • Высота −10м</div>`;
+        }
+    }
+    resultArea.innerHTML=`<div class="${cardClass}"><div class="card-info"><h3>${currentAmmo.toUpperCase()} • 0°</h3><p>ЦЕЛЬ: <b style="color:#fff">${currentTargetAlt.toFixed(1)} м</b></p>${status}${scatterNote}</div><div class="card-value"><span class="val-big">${heliAlt} м</span><span class="val-sub">ВЕРТОЛЁТ</span><br><span class="val-big" style="font-size:0.9rem;color:#888">ΔH: ${deltaH} м</span><span class="val-sub">ОТНОСИТ.</span><br><span class="val-big" style="font-size:0.8rem;color:#666">${rDisp}</span><span class="val-sub">ДАЛЬНОСТЬ</span><br><span class="val-big" style="font-size:0.7rem;color:var(--warning)">${scatterDisp}</span><span class="val-sub">РАЗБРОС</span></div></div>`;
+    drawScatter();
+    updateScatterExtra(currentAmmo==='hydra'&&targetR>10800);
+    updateFlightTimePanel();
+}
+
+// ✅ СИСТЕМА ПРОВЕРКИ ДОСТУПА (ВНУТРЕННЯЯ)
+const SEC_SALT = "s8_rocket_salt_2024_secure_random_string_v1";
+const SEC_ITER = 100000;
+const SEC_LEN = 256;
+const SEC_ALG = "SHA-256";
+
+let accessGranted = false;
+
+async function generateSecureHash(data) {
+    const enc = new TextEncoder();
+    const keyMaterial = await window.crypto.subtle.importKey(
+        "raw",
+        enc.encode(data),
+        { name: "PBKDF2" },
+        false,
+        ["deriveBits"]
+    );
+    
+    const derivedBits = await window.crypto.subtle.deriveBits(
+        {
+            name: "PBKDF2",
+            salt: enc.encode(SEC_SALT),
+            iterations: SEC_ITER,
+            hash: SEC_ALG
+        },
+        keyMaterial,
+        SEC_LEN
+    );
+    
+    return Array.from(new Uint8Array(derivedBits))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+const VALIDATED_HASH = "345f6452db096443f029d1c4625cf64171fde9f3094b3a66654ecd1da6199099"; 
+
+async function verifyAccess() {
+    const input = document.getElementById('passwordInput');
+    const errorMsg = document.getElementById('passwordErrorMsg');
+    const overlay = document.getElementById('passwordOverlay');
+    const mainContainer = document.getElementById('mainContainer');
+    const submitBtn = document.querySelector('.password-submit');
+    
+    const inputValue = input.value;
+    if (inputValue.length !== 4) {
+        errorMsg.textContent = 'Введите 4 цифры';
+        input.classList.add('error');
+        setTimeout(() => input.classList.remove('error'), 400);
+        return;
+    }
+    
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'ПРОВЕРКА...';
+    
+    try {
+        const inputHash = await generateSecureHash(inputValue);
+        
+        let isValid = true;
+        if (inputHash.length !== VALIDATED_HASH.length) {
+            isValid = false;
+        } else {
+            for (let i = 0; i < inputHash.length; i++) {
+                if (inputHash[i] !== VALIDATED_HASH[i]) {
+                    isValid = false;
+                    break;
+                }
+            }
+        }
+        
+        if (isValid) {
+            accessGranted = true;
+            overlay.style.display = 'none';
+            mainContainer.style.filter = 'none';
+            mainContainer.style.pointerEvents = 'auto';
+            
+            targetHeightInput.value = currentTargetAlt;
+            setAmmoType('hydra');
+            updateC8HeightPanel();
+            calculateOptimal();
+            replayBurstAnim();
+            window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
+        } else {
+            errorMsg.textContent = 'Неверный код!';
+            input.classList.add('error');
+            setTimeout(() => input.classList.remove('error'), 400);
+            input.value = '';
+            input.focus();
+        }
+    } catch (err) {
+        console.error('Ошибка проверки:', err);
+        errorMsg.textContent = 'Ошибка. Повторите.';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'ВОЙТИ';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const pwdInput = document.getElementById('passwordInput');
+    if (pwdInput) {
+        pwdInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                verifyAccess();
+            }
+        });
+        pwdInput.focus();
+    }
+});
+
+window.onload = function(){
+    if (!accessGranted) {
+        return;
+    }
+    targetHeightInput.value = currentTargetAlt;
+    setAmmoType('hydra');
+    updateC8HeightPanel();
+    calculateOptimal();
+    replayBurstAnim();
+    window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
+};
+
+// ✅ КЛАССИЧЕСКИЙ КАЛЬКУЛЯТОР (Ctrl+Alt+Z)
+let calcVisible = false;
+const calcHTML = `
+<div id="overlay-calculator" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:99999;backdrop-filter:blur(5px);">
+  <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1f2229;border:3px solid #66fcf1;border-radius:15px;padding:30px;box-shadow:0 15px 60px rgba(0,0,0,0.95);min-width:450px;max-width:90vw;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+      <span style="color:#66fcf1;font-family:var(--font-mono);font-weight:700;font-size:1.5rem;letter-spacing:2px;">КАЛЬКУЛЯТОР</span>
+      <button id="calc-close-btn" style="background:transparent;border:none;color:#ff4b4b;font-size:2rem;cursor:pointer;line-height:1;">&times;</button>
+    </div>
+    <div id="calc-display" style="background:#0a0c10;border:2px solid #2d3038;border-radius:10px;padding:20px;text-align:right;font-family:var(--font-mono);font-size:2.5rem;color:#c5c6c7;margin-bottom:20px;min-height:80px;word-break:break-all;letter-spacing:1px;"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+      <button class="calc-btn" data-val="C" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#ff4b4b;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">C</button>
+      <button class="calc-btn" data-val="(" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">(</button>
+      <button class="calc-btn" data-val=")" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">)</button>
+      <button class="calc-btn" data-val="/" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">÷</button>
+      <button class="calc-btn" data-val="7" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">7</button>
+      <button class="calc-btn" data-val="8" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">8</button>
+      <button class="calc-btn" data-val="9" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">9</button>
+      <button class="calc-btn" data-val="*" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">×</button>
+      <button class="calc-btn" data-val="4" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">4</button>
+      <button class="calc-btn" data-val="5" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">5</button>
+      <button class="calc-btn" data-val="6" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">6</button>
+      <button class="calc-btn" data-val="-" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">−</button>
+      <button class="calc-btn" data-val="1" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">1</button>
+      <button class="calc-btn" data-val="2" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">2</button>
+      <button class="calc-btn" data-val="3" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">3</button>
+      <button class="calc-btn" data-val="+" style="padding:20px;background:#2d3038;border:none;border-radius:8px;color:#66fcf1;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">+</button>
+      <button class="calc-btn" data-val="0" style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;grid-column:span 2;transition:all 0.2s;">0</button>
+      <button class="calc-btn" data-val="." style="padding:20px;background:#1a1d24;border:none;border-radius:8px;color:#c5c6c7;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">.</button>
+      <button class="calc-btn" data-val="=" style="padding:20px;background:#66fcf1;border:none;border-radius:8px;color:#0b0c10;font-family:var(--font-mono);font-size:1.5rem;font-weight:700;cursor:pointer;transition:all 0.2s;">=</button>
+    </div>
+    <div style="text-align:center;margin-top:15px;font-size:0.8rem;color:#666;font-family:var(--font-mono);">Нажмите кнопку 🧮 для открытия/закрытия</div>
+  </div>
+</div>`;
+
+(function initCalculator() {
+    // Добавляем HTML калькулятора в body
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = calcHTML;
+    const calcOverlay = tempDiv.firstElementChild;
+    document.body.appendChild(calcOverlay);
+
+    const calcDisplay = document.getElementById('calc-display');
+    const closeBtn = document.getElementById('calc-close-btn');
+    const calcButtons = document.querySelectorAll('.calc-btn');
+    
+    let calcExpression = '';
+    let justCalculated = false;
+
+    function updateDisplay(value) {
+        calcDisplay.textContent = value || '0';
+    }
+
+    function safeCalculate(expr) {
+        try {
+            // Разрешаем только цифры, операторы и скобки
+            if (!/^[\d+\-*/().\s]+$/.test(expr)) {
+                return 'Ошибка';
+            }
+            // Используем Function вместо eval для безопасности
+            const result = new Function('return ' + expr)();
+            if (!isFinite(result) || isNaN(result)) {
+                return 'Ошибка';
+            }
+            // Округляем до разумного количества знаков
+            return String(Math.round(result * 1000000) / 1000000);
+        } catch (e) {
+            return 'Ошибка';
+        }
+    }
+
+    // Обработчик кнопок калькулятора
+    calcButtons.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const val = btn.getAttribute('data-val');
+            
+            if (val === 'C') {
+                calcExpression = '';
+                justCalculated = false;
+                updateDisplay('0');
+            } else if (val === '=') {
+                if (calcExpression) {
+                    const result = safeCalculate(calcExpression);
+                    updateDisplay(result);
+                    calcExpression = result === 'Ошибка' ? '' : result;
+                    justCalculated = true;
+                }
+            } else {
+                if (justCalculated && !isNaN(val)) {
+                    calcExpression = '';
+                    justCalculated = false;
+                }
+                calcExpression += val;
+                updateDisplay(calcExpression);
+            }
+        });
+    });
+
+    // Закрытие по кнопке X
+    closeBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleCalculator();
+    });
+
+    // Закрытие по клику на оверлей
+    calcOverlay.addEventListener('click', (e) => {
+        if (e.target === calcOverlay) {
+            toggleCalculator();
+        }
+    });
+
+    // Предотвращаем всплытие событий внутри калькулятора
+    calcOverlay.querySelector('div[style*="position:absolute"]').addEventListener('click', (e) => {
+        e.stopPropagation();
+    });
+
+    // Функция переключения видимости
+    window.toggleCalculator = function() {
+        calcVisible = !calcVisible;
+        calcOverlay.style.display = calcVisible ? 'block' : 'none';
+        if (calcVisible) {
+            calcDisplay.focus();
+        }
+    };
+})();
+</script>
+</body>
+</html>

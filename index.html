@@ -231,6 +231,52 @@
         .copy-success.show { display: block; animation: fadeInOut 2s ease-in-out; }
         @keyframes fadeInOut { 0%{opacity:0}10%{opacity:1}90%{opacity:1}100%{opacity:0} }
         #c8Controls { display: none; }
+        
+        /* ✅ ПАНЕЛЬ ИНТЕРАКТИВНОЙ КАРТЫ */
+        .map-panel { background: #15171c; border: 2px solid var(--border); border-radius: 10px; padding: 20px; margin-top: 30px; }
+        .map-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; flex-wrap: wrap; }
+        .map-header-left { position: relative; display: flex; align-items: center; }
+        .map-header-right { display: flex; align-items: center; gap: 8px; }
+        .map-select-btn { padding: 8px 16px; background: #1a1d24; border: 2px solid var(--border); color: var(--text-main); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; }
+        .map-select-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); }
+        .map-select-btn.active { border-color: var(--text-highlight); }
+        .map-dropdown { position: absolute; top: calc(100% + 6px); left: 0; min-width: 180px; background: #1f2229; border: 2px solid var(--border); border-radius: 8px; max-height: 0; opacity: 0; overflow: hidden; transition: all 0.25s ease; z-index: 100; box-shadow: 0 8px 20px rgba(0,0,0,0.6); }
+        .map-dropdown.open { max-height: 250px; opacity: 1; overflow-y: auto; }
+        .map-dropdown-item { padding: 10px 16px; color: #888; font-family: var(--font-mono); font-size: 0.85rem; cursor: pointer; transition: all 0.15s; border-bottom: 1px solid var(--border); }
+        .map-dropdown-item:last-child { border-bottom: none; }
+        .map-dropdown-item:hover { background: rgba(102, 252, 241, 0.1); color: var(--text-highlight); }
+        .map-dropdown-item.active { color: var(--text-highlight); font-weight: 700; background: rgba(102, 252, 241, 0.15); }
+        .map-zoom-indicator { font-family: var(--font-mono); font-size: 0.85rem; color: var(--text-highlight); font-weight: 600; min-width: 45px; text-align: right; }
+        .map-zoom-btn { width: 34px; height: 34px; background: #1a1d24; border: 2px solid var(--border); color: var(--text-main); font-size: 1.2rem; font-weight: 700; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; line-height: 1; font-family: var(--font-mono); }
+        .map-zoom-btn:hover { border-color: var(--text-highlight); color: var(--text-highlight); }
+        .map-center-btn { width: 34px; height: 34px; background: #1a1d24; border: 2px solid var(--border); color: var(--text-highlight); font-size: 1rem; cursor: pointer; border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .map-center-btn:hover { border-color: var(--text-highlight); box-shadow: 0 0 10px rgba(102,252,241,0.3); }
+        .map-add-marker-btn { padding: 8px 14px; background: #1a1d24; border: 2px solid var(--border); color: var(--warning); font-family: var(--font-mono); font-size: 0.85rem; font-weight: 600; cursor: pointer; border-radius: 6px; transition: all 0.2s; white-space: nowrap; margin-left: 8px; }
+        .map-add-marker-btn:hover { border-color: var(--warning); color: var(--warning); box-shadow: 0 0 10px rgba(255,183,0,0.2); }
+        .map-markers { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 5; }
+        .map-marker { position: absolute; pointer-events: auto; cursor: move; z-index: 20; transform: translate(-50%, -100%); min-width: 80px; }
+        .map-marker-body { background: rgba(31,34,41,0.92); border: 2px solid var(--warning); border-radius: 8px; padding: 4px 6px; position: relative; box-shadow: 0 2px 12px rgba(0,0,0,0.6); }
+        .map-marker::after { content: ''; position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 8px solid var(--warning); }
+        .map-marker-input { background: #0a0c10; border: 1px solid var(--border); border-radius: 4px; color: #fff; font-family: var(--font-mono); font-size: 0.8rem; padding: 4px 6px; width: 120px; outline: none; }
+        .map-marker-input:focus { border-color: var(--warning); }
+        .map-marker-text { font-family: var(--font-mono); font-size: 0.8rem; color: #fff; padding: 4px 6px; white-space: nowrap; min-width: 30px; text-align: center; }
+        .map-marker-confirm, .map-marker-delete { position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50%; border: 2px solid; font-size: 0.75rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.25s ease; line-height: 1; font-family: var(--font-mono); }
+        .map-marker-confirm.show, .map-marker-delete.show { opacity: 1; }
+        .map-marker-confirm { left: -8px; background: rgba(16,185,129,0.9); border-color: #34d399; color: #fff; }
+        .map-marker-confirm:hover { background: #10b981; }
+        .map-marker-delete { right: -8px; background: rgba(239,68,68,0.9); border-color: #ef4444; color: #fff; }
+        .map-marker-delete:hover { background: #ef4444; }
+        .map-wrapper { position: relative; width: 100%; height: 450px; overflow: hidden; border: 2px solid var(--border); border-radius: 8px; background: #0a0c10; cursor: grab; }
+        .map-wrapper:active { cursor: grabbing; }
+        .map-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .map-image { max-width: none; max-height: none; transform-origin: center center; pointer-events: none; user-select: none; -webkit-user-drag: none; }
+        .map-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 10; width: 20px; height: 20px; }
+        .map-crosshair .ch-h, .map-crosshair .ch-v { position: absolute; background: rgba(102, 252, 241, 0.6); }
+        .map-crosshair .ch-h { top: 50%; left: -50%; width: 200%; height: 1px; transform: translateY(-50%); }
+        .map-crosshair .ch-v { top: -50%; left: 50%; height: 200%; width: 1px; transform: translateX(-50%); }
+        .map-crosshair .ch-circle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 4px; height: 4px; border: 1px solid rgba(102, 252, 241, 0.5); border-radius: 50%; }
+        .map-coords { text-align: center; font-family: var(--font-mono); font-size: 0.8rem; color: #666; margin-top: 8px; min-height: 18px; }
+        .map-hint { text-align: center; font-size: 0.75rem; color: #666; margin-top: 6px; font-family: var(--font-mono); }
     </style>
 </head>
 <body>
@@ -299,6 +345,36 @@
         </div>
         <button class="btn-calc" id="calcBtn" style="display:none;" onclick="calculateOptimal()">РАССЧИТАТЬ РЕШЕНИЕ</button>
         <div class="results" id="resultArea"></div>
+
+        <!-- ✅ ПАНЕЛЬ ИНТЕРАКТИВНОЙ КАРТЫ -->
+        <div class="map-panel" id="mapPanel">
+            <div class="map-header">
+                <div class="map-header-left">
+                    <button class="map-select-btn" id="mapSelectBtn">🗺️ Выбор карты</button>
+                    <div class="map-dropdown" id="mapDropdown"></div>
+                </div>
+                <div class="map-header-right">
+                    <button class="map-add-marker-btn" id="mapAddMarkerBtn">📍 Метка</button>
+                    <span class="map-zoom-indicator" id="mapZoomIndicator">100%</span>
+                    <button class="map-center-btn" id="mapCenterBtn">⟲</button>
+                    <button class="map-zoom-btn" id="mapZoomIn">+</button>
+                    <button class="map-zoom-btn" id="mapZoomOut">−</button>
+                </div>
+            </div>
+            <div class="map-wrapper" id="mapWrapper">
+                <div class="map-container" id="mapContainer">
+                    <img class="map-image" id="mapImage" src="" alt="Карта">
+                    <div class="map-markers" id="mapMarkers"></div>
+                    <div class="map-crosshair" id="mapCrosshair">
+                        <div class="ch-h"></div>
+                        <div class="ch-v"></div>
+                        <div class="ch-circle"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="map-coords" id="mapCoords">X: — | Y: —</div>
+            <div class="map-hint">🖱️ Колесико: Зум | ЛКМ: Перемещение | +/- : Масштаб</div>
+        </div>
 
         <div class="panels-row">
             <div class="panel-box">
@@ -1802,6 +1878,7 @@ async function verifyAccess() {
             updateC8HeightPanel();
             calculateOptimal();
             replayBurstAnim();
+            setTimeout(discoverMaps, 100);
             window.addEventListener('resize',()=>{cancelAnimationFrame(burstRaf);bInitState();replayBurstAnim();});
         } else {
             errorMsg.textContent = 'Неверный код!';
@@ -1969,6 +2046,392 @@ const calcHTML = `
         }
     };
 })();
+
+// ===== ИНТЕРАКТИВНАЯ КАРТА =====
+const MAP_FILES = ['map1.png', 'map2.png', 'map3.jpg', 'map4.png', 'map5.webp'];
+
+let mapState = {
+    currentMap: null, scale: 1, translateX: 0, translateY: 0,
+    isDragging: false, dragStartX: 0, dragStartY: 0,
+    dragStartTx: 0, dragStartTy: 0
+};
+
+let markers = [];
+let markerIdCounter = 0;
+let dragMarkerId = null;
+let edgeScrollDir = { x: 0, y: 0 };
+let edgeScrollRaf = null;
+const EDGE_THRESHOLD = 30;
+
+const mImg = document.getElementById('mapImage');
+const mWrap = document.getElementById('mapWrapper');
+const mZoomInd = document.getElementById('mapZoomIndicator');
+const mCoords = document.getElementById('mapCoords');
+const mSelBtn = document.getElementById('mapSelectBtn');
+const mDropdown = document.getElementById('mapDropdown');
+const mZoomIn = document.getElementById('mapZoomIn');
+const mZoomOut = document.getElementById('mapZoomOut');
+const mCenterBtn = document.getElementById('mapCenterBtn');
+const mAddMarkerBtn = document.getElementById('mapAddMarkerBtn');
+const mMarkers = document.getElementById('mapMarkers');
+
+let availMaps = [];
+
+function tryLoadImg(filename) {
+    return new Promise(r => { const i = new Image(); i.onload = () => r(true); i.onerror = () => r(false); i.src = 'maps/' + filename; });
+}
+
+async function discoverMaps() {
+    availMaps = [];
+    const results = await Promise.all(MAP_FILES.map(f => tryLoadImg(f).then(s => ({f, s}))));
+    results.forEach(r => { if (r.s) availMaps.push({ file: r.f, name: r.f.replace(/\.[^.]+$/, '') }); });
+    if (availMaps.length === 0) availMaps.push({ file: 'map1.png', name: 'map1' });
+    renderDropdown();
+    if (availMaps.length > 0) selectMap(availMaps[0].file);
+}
+
+function renderDropdown() {
+    mDropdown.innerHTML = '';
+    availMaps.forEach((m, i) => {
+        const el = document.createElement('div');
+        el.className = 'map-dropdown-item' + (m.file === mapState.currentMap ? ' active' : '');
+        el.textContent = m.name;
+        el.addEventListener('click', e => { e.stopPropagation(); selectMap(m.file); closeDropdown(); });
+        mDropdown.appendChild(el);
+    });
+}
+
+function selectMap(file) {
+    mapState.currentMap = file;
+    markers = []; renderMarkers();
+    mImg.src = 'maps/' + file;
+    mImg.onload = () => { resetTransform(); updateTransform(); renderMarkers(); };
+    document.querySelectorAll('.map-dropdown-item').forEach(el => el.classList.remove('active'));
+    const items = mDropdown.querySelectorAll('.map-dropdown-item');
+    const idx = availMaps.findIndex(m => m.file === file);
+    if (items[idx]) items[idx].classList.add('active');
+    mSelBtn.textContent = '🗺️ ' + file.replace(/\.[^.]+$/, '');
+    closeDropdown();
+}
+
+function toggleDropdown() { mDropdown.classList.toggle('open'); mSelBtn.classList.toggle('active'); }
+function closeDropdown() { mDropdown.classList.remove('open'); mSelBtn.classList.remove('active'); }
+function resetTransform() { mapState.scale = 1; mapState.translateX = 0; mapState.translateY = 0; }
+
+function updateTransform(instant) {
+    mImg.style.transition = instant ? 'none' : 'transform 0.2s ease-out';
+    mImg.style.transform = `translate(${mapState.translateX}px, ${mapState.translateY}px) scale(${mapState.scale})`;
+    mZoomInd.textContent = Math.round(mapState.scale * 100) + '%';
+    if (markers.length) updateMarkerPos();
+}
+
+function zoomIn() { const w = mWrap.clientWidth, h = mWrap.clientHeight; zoomTo(1.2, w / 2, h / 2); }
+function zoomOut() { const w = mWrap.clientWidth, h = mWrap.clientHeight; zoomTo(0.8, w / 2, h / 2); }
+
+function zoomTo(factor, cx, cy) {
+    const oldS = mapState.scale;
+    let newS = Math.max(0.17, Math.min(16, oldS * factor));
+    if (newS === oldS) return;
+    const cw = mWrap.clientWidth, ch = mWrap.clientHeight;
+    mapState.translateX = cx - cw / 2 - (cx - cw / 2 - mapState.translateX) * (newS / oldS);
+    mapState.translateY = cy - ch / 2 - (cy - ch / 2 - mapState.translateY) * (newS / oldS);
+    mapState.scale = newS;
+    updateTransform(false);
+}
+
+mWrap.addEventListener('wheel', e => {
+    e.preventDefault();
+    const r = mWrap.getBoundingClientRect();
+    zoomTo(e.deltaY > 0 ? 0.9 : 1.1, e.clientX - r.left, e.clientY - r.top);
+}, { passive: false });
+
+mWrap.addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    mapState.isDragging = true;
+    mapState.dragStartX = e.clientX;
+    mapState.dragStartY = e.clientY;
+    mapState.dragStartTx = mapState.translateX;
+    mapState.dragStartTy = mapState.translateY;
+    mImg.style.transition = 'none';
+});
+
+window.addEventListener('mousemove', e => {
+    mapState.cursorScreenX = e.clientX;
+    mapState.cursorScreenY = e.clientY;
+
+    if (mapState.isDragging) {
+        mapState.translateX = mapState.dragStartTx + (e.clientX - mapState.dragStartX);
+        mapState.translateY = mapState.dragStartTy + (e.clientY - mapState.dragStartY);
+        updateTransform(true);
+        if (markers.length) updateMarkerPos();
+    }
+
+    if (dragMarkerId !== null) {
+        const r = mWrap.getBoundingClientRect();
+        const mx = e.clientX - r.left;
+        const my = e.clientY - r.top;
+        const pos = screenToMap(mx, my);
+        const m = markers.find(x => x.id === dragMarkerId);
+        if (m) { m.mapX = pos.x; m.mapY = pos.y; updateMarkerPos(); }
+        edgeScrollDir.x = mx < EDGE_THRESHOLD ? 1 : (mx > r.width - EDGE_THRESHOLD ? -1 : 0);
+        edgeScrollDir.y = my < EDGE_THRESHOLD ? 1 : (my > r.height - EDGE_THRESHOLD ? -1 : 0);
+        if ((edgeScrollDir.x || edgeScrollDir.y) && !edgeScrollRaf) edgeScrollRaf = requestAnimationFrame(edgeScrollLoop);
+        else if (!edgeScrollDir.x && !edgeScrollDir.y && edgeScrollRaf) { cancelAnimationFrame(edgeScrollRaf); edgeScrollRaf = null; }
+    }
+
+    updateCoords(e);
+});
+
+window.addEventListener('mouseup', () => {
+    if (mapState.isDragging) { mapState.isDragging = false; updateTransform(false); if (markers.length) updateMarkerPos(); }
+    stopMarkerDrag();
+});
+
+function updateCoords(e) {
+    if (!mImg.complete || !mImg.naturalWidth) { mCoords.textContent = 'X: — | Y: —'; return; }
+    const r = mWrap.getBoundingClientRect();
+    const mx = e.clientX - r.left, my = e.clientY - r.top;
+    const imgW = mImg.naturalWidth, imgH = mImg.naturalHeight;
+    const cw = mWrap.clientWidth, ch = mWrap.clientHeight;
+    const s = mapState.scale, tx = mapState.translateX, ty = mapState.translateY;
+    const left = cw / 2 + tx - (imgW * s) / 2;
+    const top = ch / 2 + ty - (imgH * s) / 2;
+    const ix = (mx - left) / s, iy = (my - top) / s;
+    if (ix >= 0 && ix <= imgW && iy >= 0 && iy <= imgH) {
+        mCoords.textContent = 'X: ' + Math.round(ix) + ' | Y: ' + Math.round(iy);
+    } else {
+        mCoords.textContent = 'X: — | Y: —';
+    }
+}
+
+// ===== МЕТКИ =====
+function screenToMap(sx, sy) {
+    const cw = mWrap.clientWidth, ch = mWrap.clientHeight;
+    const s = mapState.scale, tx = mapState.translateX, ty = mapState.translateY;
+    const imgW = mImg.naturalWidth || 1, imgH = mImg.naturalHeight || 1;
+    const left = cw / 2 + tx - (imgW * s) / 2;
+    const top = ch / 2 + ty - (imgH * s) / 2;
+    return { x: (sx - left) / s, y: (sy - top) / s };
+}
+
+function mapToScreen(mx, my) {
+    const cw = mWrap.clientWidth, ch = mWrap.clientHeight;
+    const s = mapState.scale, tx = mapState.translateX, ty = mapState.translateY;
+    const imgW = mImg.naturalWidth || 1, imgH = mImg.naturalHeight || 1;
+    const left = cw / 2 + tx - (imgW * s) / 2;
+    const top = ch / 2 + ty - (imgH * s) / 2;
+    return { x: left + mx * s, y: top + my * s };
+}
+
+function createMarkerEl(m) {
+    const el = document.createElement('div');
+    el.className = 'map-marker';
+    el.dataset.id = m.id;
+    const body = document.createElement('div');
+    body.className = 'map-marker-body';
+
+    const editDiv = document.createElement('div');
+    editDiv.className = 'map-marker-edit';
+    editDiv.style.display = m.isEditing ? 'block' : 'none';
+
+    const inp = document.createElement('input');
+    inp.className = 'map-marker-input';
+    inp.type = 'text';
+    inp.value = m.text;
+    inp.placeholder = 'Текст метки...';
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.stopPropagation(); confirmMarker(m.id); } });
+    editDiv.appendChild(inp);
+
+    const confirmBtn = document.createElement('button');
+    confirmBtn.className = 'map-marker-confirm' + (m.isEditing ? ' show' : '');
+    confirmBtn.textContent = '+';
+    confirmBtn.addEventListener('mousedown', e => e.stopPropagation());
+    confirmBtn.addEventListener('click', e => { e.stopPropagation(); confirmMarker(m.id); });
+    editDiv.appendChild(confirmBtn);
+    body.appendChild(editDiv);
+
+    const textDiv = document.createElement('div');
+    textDiv.className = 'map-marker-text';
+    textDiv.style.display = m.isEditing ? 'none' : 'block';
+    textDiv.textContent = (m.text && m.text.trim()) ? m.text : '';
+    body.appendChild(textDiv);
+
+    const delBtn = document.createElement('button');
+    delBtn.className = 'map-marker-delete';
+    delBtn.textContent = '✕';
+    delBtn.addEventListener('mousedown', e => e.stopPropagation());
+    delBtn.addEventListener('click', e => { e.stopPropagation(); deleteMarker(m.id); });
+    body.appendChild(delBtn);
+
+    el.appendChild(body);
+
+    el.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        e.stopPropagation();
+        startMarkerDrag(m.id, e);
+    });
+
+    el.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleMarkerButtons(m.id);
+    });
+
+    return el;
+}
+
+function renderMarkers() {
+    mMarkers.innerHTML = '';
+    markers.forEach(m => {
+        const pos = mapToScreen(m.mapX, m.mapY);
+        const el = createMarkerEl(m);
+        el.style.left = pos.x + 'px';
+        el.style.top = pos.y + 'px';
+        mMarkers.appendChild(el);
+    });
+}
+
+function addMarker() {
+    if (!mImg.complete || !mImg.naturalWidth) return;
+    const cw = mWrap.clientWidth, ch = mWrap.clientHeight;
+    const pos = screenToMap(cw / 2, ch / 2);
+    const m = {
+        id: ++markerIdCounter,
+        mapX: pos.x,
+        mapY: pos.y,
+        text: '',
+        displayText: null,
+        isEditing: true,
+        showButtons: false
+    };
+    markers.push(m);
+    renderMarkers();
+    requestAnimationFrame(() => {
+        const el = mMarkers.querySelector('[data-id="' + m.id + '"] .map-marker-input');
+        if (el) el.focus();
+    });
+}
+
+function confirmMarker(id) {
+    const m = markers.find(x => x.id === id);
+    if (!m) return;
+    const el = mMarkers.querySelector('[data-id="' + id + '"] .map-marker-input');
+    if (!el) return;
+    let val = el.value.trim();
+    if (val.startsWith('=')) {
+        try {
+            const expr = val.slice(1);
+            if (/^[\d+\-*/().%\s]+$/.test(expr)) {
+                const result = new Function('return ' + expr)();
+                if (isFinite(result)) val = String(Math.round(result * 1000000) / 1000000);
+            }
+        } catch(e) {}
+    }
+    m.text = val;
+    m.displayText = val || '';
+    m.isEditing = false;
+    renderMarkers();
+}
+
+function deleteMarker(id) {
+    markers = markers.filter(x => x.id !== id);
+    renderMarkers();
+}
+
+function toggleMarkerButtons(id) {
+    const m = markers.find(x => x.id === id);
+    if (!m || m.isEditing) return;
+    m.isEditing = true;
+    renderMarkers();
+    requestAnimationFrame(() => {
+        const el = mMarkers.querySelector('[data-id="' + id + '"]');
+        if (!el) return;
+        el.querySelector('.map-marker-delete').classList.add('show');
+        el.querySelector('.map-marker-confirm').classList.add('show');
+        el.querySelector('.map-marker-input').focus();
+    });
+}
+
+function startMarkerDrag(id, e) {
+    dragMarkerId = id;
+    mWrap.style.cursor = 'grabbing';
+    const m = markers.find(x => x.id === id);
+    if (!m) return;
+    m.isEditing = false;
+    renderMarkers();
+}
+
+function stopMarkerDrag() {
+    if (dragMarkerId !== null) {
+        dragMarkerId = null;
+        mWrap.style.cursor = 'grab';
+        if (edgeScrollRaf) { cancelAnimationFrame(edgeScrollRaf); edgeScrollRaf = null; }
+        edgeScrollDir = { x: 0, y: 0 };
+    }
+}
+
+function edgeScrollLoop() {
+    if (dragMarkerId === null || (edgeScrollDir.x === 0 && edgeScrollDir.y === 0)) {
+        edgeScrollRaf = null;
+        return;
+    }
+    const speed = 8;
+    mapState.translateX += edgeScrollDir.x * speed;
+    mapState.translateY += edgeScrollDir.y * speed;
+    updateTransform(true);
+
+    if (dragMarkerId !== null) {
+        const m = markers.find(x => x.id === dragMarkerId);
+        if (m) {
+            const r = mWrap.getBoundingClientRect();
+            const cx = mapState.cursorScreenX != null ? mapState.cursorScreenX : r.width / 2;
+            const cy = mapState.cursorScreenY != null ? mapState.cursorScreenY : r.height / 2;
+            const pos = screenToMap(cx, cy);
+            m.mapX = pos.x;
+            m.mapY = pos.y;
+            updateMarkerPos();
+        }
+    }
+    edgeScrollRaf = requestAnimationFrame(edgeScrollLoop);
+}
+
+function updateMarkerPos() {
+    markers.forEach(m => {
+        const el = mMarkers.querySelector('[data-id="' + m.id + '"]');
+        if (!el) return;
+        const pos = mapToScreen(m.mapX, m.mapY);
+        el.style.left = pos.x + 'px';
+        el.style.top = pos.y + 'px';
+    });
+}
+
+// marker drag handlers integrated into main mousemove/mouseup above
+
+function hideMarkerButtons() {
+    markers.forEach(m => {
+        if (m.isEditing) {
+            m.isEditing = false;
+            const el = mMarkers.querySelector('[data-id="' + m.id + '"]');
+            if (el) {
+                const editDiv = el.querySelector('.map-marker-edit');
+                const textDiv = el.querySelector('.map-marker-text');
+                if (editDiv) editDiv.style.display = 'none';
+                if (textDiv) textDiv.style.display = 'block';
+            }
+        }
+    });
+    document.querySelectorAll('.map-marker-delete.show, .map-marker-confirm.show').forEach(el => el.classList.remove('show'));
+}
+
+mWrap.addEventListener('mousedown', e => { hideMarkerButtons(); });
+
+mAddMarkerBtn.addEventListener('click', addMarker);
+
+mSelBtn.addEventListener('click', e => { e.stopPropagation(); toggleDropdown(); });
+document.addEventListener('click', e => { if (!mSelBtn.contains(e.target) && !mDropdown.contains(e.target)) closeDropdown(); });
+mZoomIn.addEventListener('click', zoomIn);
+mZoomOut.addEventListener('click', zoomOut);
+mCenterBtn.addEventListener('click', () => { resetTransform(); updateTransform(); renderMarkers(); });
 </script>
 </body>
 </html>

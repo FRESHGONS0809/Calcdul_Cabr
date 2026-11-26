@@ -1045,7 +1045,8 @@ function getRangeForAngle(angle, deltaH) {
     if (['c8','s5','s13'].includes(currentAmmo)) {
         let rpgCfg = getAmmoConfig();
         if (isAirburst) {
-            let airData = rpgCfg.airburstData;
+            const ballData = currentAmmo==='c8' ? c8BallisticData : currentAmmo==='s5' ? s5BallisticData : s13BallisticData;
+            let airData = ballData[getAirburstMode(currentAmmo, c8AirburstHeight)] || rpgCfg.airburstData;
             if (airData) {
                 let keys = getHeights(airData);
                 if (keys.length === 1) return {range:airData[keys[0]].range, reason:null, scatter:airData[keys[0]].scatter};
@@ -1085,6 +1086,12 @@ function getRangeForAngle(angle, deltaH) {
     return {range:Math.round(ext),reason:null,scatter:HYDRA_SCATTER_LENGTH[angle]};
 }
 
+// ✅ Вспомогательная функция: выбрать режим воздушного подрыва по фактической высоте (0-50м)
+// airburst_10_20 — высоты 0-24м, airburst_30_40 — высоты 25-50м (для С-8 заданы отдельные якоря).
+function getAirburstMode(ammo, height) {
+    return (ammo === 'c8' && height >= 25) ? 'airburst_30_40' : 'airburst_10_20';
+}
+
 // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ findBestDeltaH с новой логикой подрыва
 function findBestDeltaH(angle, targetR) {
     if (['c8','s5','s13'].includes(currentAmmo)) {
@@ -1092,9 +1099,7 @@ function findBestDeltaH(angle, targetR) {
         if (isAirburst) {
             const realBurstHeight = Math.max(0, c8AirburstHeight - 10);
             let dh;
-            if (currentAmmo === 's5') {
-                dh = rpgCfg.minAirburstDH + realBurstHeight * 2.5;
-            } else if (currentAmmo === 's13') {
+            if (currentAmmo === 's13') {
                 // ✅ С-13: якорь 890ΔH = 1 метр над землёй, при увеличении высоты подрыва ΔH прибавляется к нему
                 dh = rpgCfg.minAirburstDH + c8AirburstHeight - 1;
             } else {
@@ -1106,7 +1111,9 @@ function findBestDeltaH(angle, targetR) {
             }
             const finalDH = Math.max(dh, rpgCfg.minAirburstDH);
             let range = rpgCfg.airburstFixedRange, scatter = 20;
-            let airData = rpgCfg.airburstData;
+            // ✅ ИСПРАВЛЕНО: раньше всегда использовался только airburst_10_20; теперь режим выбирается по высоте подрыва
+            const ballData = currentAmmo==='c8' ? c8BallisticData : currentAmmo==='s5' ? s5BallisticData : s13BallisticData;
+            let airData = ballData[getAirburstMode(currentAmmo, c8AirburstHeight)] || rpgCfg.airburstData;
             if (airData) {
                 let keys = getHeights(airData);
                 if (keys.length === 1) {
@@ -1295,6 +1302,12 @@ function updateFlightTimePanel() {
             document.getElementById('formulaText').innerHTML=
                 `ΔH = 460 + ${h_p}×2.5 = <b>${deltaH} м</b> | `+
                 `R ≈ 5090 − ${h_p}×4.5 = <b>${result.range||'?'} м</b> | `+
+                `t = <b>${ft.time.toFixed(1)} сек</b>`;
+        } else if (currentAmmo==='s13' && isAirburst) {
+            // ✅ Формула С-13: якорь 890ΔH = 1м над землёй, далее ΔH прибавляется к 890
+            document.getElementById('formulaText').innerHTML=
+                `ΔH = 890 + (${c8AirburstHeight}−1) = <b>${deltaH} м</b> | `+
+                `R = <b>${result.range||5350} м</b> | `+
                 `t = <b>${ft.time.toFixed(1)} сек</b>`;
         } else {
             document.getElementById('formulaText').textContent=`t = ${ft.time.toFixed(1)} сек (фиксированное)`;
